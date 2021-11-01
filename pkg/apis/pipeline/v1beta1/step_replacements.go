@@ -24,4 +24,5 @@ import (
 func ApplyStepReplacements(step *Step, stringReplacements map[string]string, arrayReplacements map[string][]string) {
 	step.Script = substitution.ApplyReplacements(step.Script, stringReplacements)
 	applyContainerReplacements(&step.Container, stringReplacements, arrayReplacements)
+	applyResourceReplacements(&step.Resources, &step.Container, stringReplacements)
 }

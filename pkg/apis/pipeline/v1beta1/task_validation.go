@@ -241,6 +241,15 @@ func validateStep(ctx context.Context, s Step, names sets.String) (errs *apis.Fi
 			errs = errs.Also(ValidateEnabledAPIFields(ctx, "windows script support", config.AlphaAPIFields).ViaField("script"))
 		}
 	}
+
+	for _, quantity := range s.Resources.Limits {
+        errs = errs.Also(validateResourceQuantity(quantity))
+	}
+
+    for _, quantity := range s.Resources.Requests {
+        errs = errs.Also(validateResourceQuantity(quantity))
+	}
+
 	return errs
 }
 
@@ -397,4 +406,9 @@ func validateTaskNoArrayReferenced(value, prefix string, arrayNames sets.String)
 
 func validateTaskArraysIsolated(value, prefix string, arrayNames sets.String) *apis.FieldError {
 	return substitution.ValidateVariableIsolatedP(value, prefix, arrayNames)
+}
+
+func validateResourceQuantity(value string) *apis.FieldError {
+	// TODO
+    return nil
 }

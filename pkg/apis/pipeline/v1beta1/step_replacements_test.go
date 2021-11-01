@@ -21,8 +21,10 @@ import (
 
 	"github.com/google/go-cmp/cmp"
 	"github.com/tektoncd/pipeline/pkg/apis/pipeline/v1beta1"
+	resource "k8s.io/apimachinery/pkg/api/resource"
 	corev1 "k8s.io/api/core/v1"
 )
+
 
 func TestApplyStepReplacements(t *testing.T) {
 	replacements := map[string]string{
@@ -31,6 +33,10 @@ func TestApplyStepReplacements(t *testing.T) {
 
 	arrayReplacements := map[string][]string{
 		"array.replace.me": {"val1", "val2"},
+	}
+
+	resourceList := map[corev1.ResourceName]string{
+		"memory": "replace.me",
 	}
 
 	s := v1beta1.Step{
@@ -77,6 +83,14 @@ func TestApplyStepReplacements(t *testing.T) {
 				SubPath:   "$(replace.me)",
 			}},
 		},
+		Resources: v1beta1.ResourceRequirements{
+			Requests: resourceList,
+			Limits: resourceList,
+		},
+	}
+
+	expectedResources := map[corev1.ResourceName]resource.Quantity{
+		"memory": resource.Quantity{Format: "replaced!"},
 	}
 
 	expected := v1beta1.Step{
@@ -122,6 +136,10 @@ func TestApplyStepReplacements(t *testing.T) {
 				MountPath: "replaced!",
 				SubPath:   "replaced!",
 			}},
+			Resources: corev1.ResourceRequirements{
+				Requests: expectedResources,
+				Limits: expectedResources,
+			},
 		},
 	}
 	v1beta1.ApplyStepReplacements(&s, replacements, arrayReplacements)

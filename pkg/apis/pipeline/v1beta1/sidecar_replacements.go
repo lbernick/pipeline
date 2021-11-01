@@ -24,4 +24,5 @@ import (
 func ApplySidecarReplacements(sidecar *Sidecar, stringReplacements map[string]string, arrayReplacements map[string][]string) {
 	sidecar.Script = substitution.ApplyReplacements(sidecar.Script, stringReplacements)
 	applyContainerReplacements(&sidecar.Container, stringReplacements, arrayReplacements)
+	applyResourceReplacements(&sidecar.Resources, &sidecar.Container, stringReplacements)
 }

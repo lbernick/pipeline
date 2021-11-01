@@ -18,6 +18,7 @@ package v1beta1
 
 import (
 	"github.com/tektoncd/pipeline/pkg/substitution"
+	resource "k8s.io/apimachinery/pkg/api/resource"
 	corev1 "k8s.io/api/core/v1"
 )
 
@@ -71,4 +72,17 @@ func applyContainerReplacements(step *corev1.Container, stringReplacements map[s
 		step.VolumeMounts[iv].MountPath = substitution.ApplyReplacements(v.MountPath, stringReplacements)
 		step.VolumeMounts[iv].SubPath = substitution.ApplyReplacements(v.SubPath, stringReplacements)
 	}
+}
+
+func applyResourceReplacements(resources *ResourceRequirements, container *corev1.Container, stringReplacements map[string]string) {
+	container.Resources.Limits = make(map[corev1.ResourceName]resource.Quantity)
+    for name, quantity := range resources.Limits {
+		container.Resources.Limits[name] = resource.Quantity{Format: (resource.Format)(substitution.ApplyReplacements(quantity, stringReplacements))}
+	}
+	resources.Limits = nil
+	container.Resources.Requests = make(map[corev1.ResourceName]resource.Quantity)
+	for name, quantity := range resources.Requests {
+		container.Resources.Requests[name] = resource.Quantity{Format: (resource.Format)(substitution.ApplyReplacements(quantity, stringReplacements))}
+	}
+	resources.Requests = nil
 }
