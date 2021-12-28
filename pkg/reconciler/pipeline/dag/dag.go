@@ -53,7 +53,7 @@ type Graph struct {
 }
 
 // Returns an empty Pipeline Graph
-func newGraph() *Graph {
+func NewGraph() *Graph {
 	return &Graph{Nodes: map[string]*Node{}}
 }
 
@@ -70,7 +70,7 @@ func (g *Graph) addPipelineTask(t Task) (*Node, error) {
 
 // Build returns a valid pipeline Graph. Returns error if the pipeline is invalid
 func Build(tasks Tasks, deps map[string][]string) (*Graph, error) {
-	d := newGraph()
+	d := NewGraph()
 
 	// Add all Tasks mentioned in the `PipelineSpec`
 	for _, pt := range tasks.Items() {

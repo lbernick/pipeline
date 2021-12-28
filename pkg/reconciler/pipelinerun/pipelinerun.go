@@ -39,7 +39,6 @@ import (
 	listers "github.com/tektoncd/pipeline/pkg/client/listers/pipeline/v1beta1"
 	resourcelisters "github.com/tektoncd/pipeline/pkg/client/resource/listers/resource/v1alpha1"
 	"github.com/tektoncd/pipeline/pkg/pipelinerunmetrics"
-	tknreconciler "github.com/tektoncd/pipeline/pkg/reconciler"
 	"github.com/tektoncd/pipeline/pkg/reconciler/events"
 	"github.com/tektoncd/pipeline/pkg/reconciler/events/cloudevent"
 	"github.com/tektoncd/pipeline/pkg/reconciler/pipeline/dag"
@@ -179,22 +178,23 @@ func (c *Reconciler) ReconcileKind(ctx context.Context, pr *v1beta1.PipelineRun)
 	if pr.IsDone() {
 		pr.SetDefaults(ctx)
 
-		if err := artifacts.CleanupArtifactStorage(ctx, pr, c.KubeClientSet); err != nil {
-			logger.Errorf("Failed to delete PVC for PipelineRun %s: %v", pr.Name, err)
-			return c.finishReconcileUpdateEmitEvents(ctx, pr, before, err)
-		}
-		if err := c.cleanupAffinityAssistants(ctx, pr); err != nil {
-			logger.Errorf("Failed to delete StatefulSet for PipelineRun %s: %v", pr.Name, err)
-			return c.finishReconcileUpdateEmitEvents(ctx, pr, before, err)
-		}
-		if err := c.updateTaskRunsStatusDirectly(pr); err != nil {
-			logger.Errorf("Failed to update TaskRun status for PipelineRun %s: %v", pr.Name, err)
-			return c.finishReconcileUpdateEmitEvents(ctx, pr, before, err)
-		}
-		if err := c.updateRunsStatusDirectly(pr); err != nil {
-			logger.Errorf("Failed to update Run status for PipelineRun %s: %v", pr.Name, err)
-			return c.finishReconcileUpdateEmitEvents(ctx, pr, before, err)
-		}
+		/*
+			if err := artifacts.CleanupArtifactStorage(ctx, pr, c.KubeClientSet); err != nil {
+				logger.Errorf("Failed to delete PVC for PipelineRun %s: %v", pr.Name, err)
+				return c.finishReconcileUpdateEmitEvents(ctx, pr, before, err)
+			}
+			if err := c.cleanupAffinityAssistants(ctx, pr); err != nil {
+				logger.Errorf("Failed to delete StatefulSet for PipelineRun %s: %v", pr.Name, err)
+				return c.finishReconcileUpdateEmitEvents(ctx, pr, before, err)
+			}
+			if err := c.updateTaskRunsStatusDirectly(pr); err != nil {
+				logger.Errorf("Failed to update TaskRun status for PipelineRun %s: %v", pr.Name, err)
+				return c.finishReconcileUpdateEmitEvents(ctx, pr, before, err)
+			}
+			if err := c.updateRunsStatusDirectly(pr); err != nil {
+				logger.Errorf("Failed to update Run status for PipelineRun %s: %v", pr.Name, err)
+				return c.finishReconcileUpdateEmitEvents(ctx, pr, before, err)
+			} */
 		go func(metrics *pipelinerunmetrics.Recorder) {
 			err := metrics.DurationAndCount(pr)
 			if err != nil {
@@ -279,6 +279,7 @@ func (c *Reconciler) resolvePipelineState(
 			return nil, controller.NewPermanentError(err)
 		}
 
+		// FIXME
 		resolvedTask, err := resources.ResolvePipelineRunTask(ctx,
 			*pr,
 			fn,
@@ -378,83 +379,86 @@ func (c *Reconciler) reconcile(ctx context.Context, pr *v1beta1.PipelineRun, get
 	// if a task in PipelineRunState is final task or not
 	// the finally section is optional and might not exist
 	// dfinally holds an empty Graph in the absence of finally clause
-	dfinally, err := dag.Build(v1beta1.PipelineTaskList(pipelineSpec.Finally), map[string][]string{})
-	if err != nil {
-		// This Run has failed, so we need to mark it as failed and stop reconciling it
-		pr.Status.MarkFailed(ReasonInvalidGraph,
-			"PipelineRun %s's Pipeline DAG is invalid for finally clause: %s",
-			pr.Namespace, pr.Name, err)
-		return controller.NewPermanentError(err)
-	}
-
-	if err := pipelineSpec.Validate(ctx); err != nil {
-		// This Run has failed, so we need to mark it as failed and stop reconciling it
-		pr.Status.MarkFailed(ReasonFailedValidation,
-			"Pipeline %s/%s can't be Run; it has an invalid spec: %s",
-			pipelineMeta.Namespace, pipelineMeta.Name, err)
-		return controller.NewPermanentError(err)
-	}
-
-	if err := resources.ValidateResourceBindings(pipelineSpec, pr); err != nil {
-		// This Run has failed, so we need to mark it as failed and stop reconciling it
-		pr.Status.MarkFailed(ReasonInvalidBindings,
-			"PipelineRun %s/%s doesn't bind Pipeline %s/%s's PipelineResources correctly: %s",
-			pr.Namespace, pr.Name, pr.Namespace, pipelineMeta.Name, err)
-		return controller.NewPermanentError(err)
-	}
-	providedResources, err := resources.GetResourcesFromBindings(pr, c.resourceLister.PipelineResources(pr.Namespace).Get)
-	if err != nil {
-		if errors.IsNotFound(err) && tknreconciler.IsYoungResource(pr) {
-			// For newly created resources, don't fail immediately.
-			// Instead return an (non-permanent) error, which will prompt the
-			// controller to requeue the key with backoff.
-			logger.Warnf("References for pipelinerun %s not found: %v", pr.Name, err)
-			pr.Status.MarkRunning(ReasonCouldntGetResource,
-				"Unable to resolve dependencies for %q: %v", pr.Name, err)
-			return err
+	/*
+		dfinally, err := dag.Build(v1beta1.PipelineTaskList(pipelineSpec.Finally), map[string][]string{})
+		if err != nil {
+			// This Run has failed, so we need to mark it as failed and stop reconciling it
+			pr.Status.MarkFailed(ReasonInvalidGraph,
+				"PipelineRun %s's Pipeline DAG is invalid for finally clause: %s",
+				pr.Namespace, pr.Name, err)
+			return controller.NewPermanentError(err)
 		}
-		// This Run has failed, so we need to mark it as failed and stop reconciling it
-		pr.Status.MarkFailed(ReasonCouldntGetResource,
-			"PipelineRun %s/%s can't be Run; it tries to bind Resources that don't exist: %s",
-			pipelineMeta.Namespace, pr.Name, err)
-		return controller.NewPermanentError(err)
-	}
-	// Ensure that the PipelineRun provides all the parameters required by the Pipeline
-	if err := resources.ValidateRequiredParametersProvided(&pipelineSpec.Params, &pr.Spec.Params); err != nil {
-		// This Run has failed, so we need to mark it as failed and stop reconciling it
-		pr.Status.MarkFailed(ReasonParameterMissing,
-			"PipelineRun %s parameters is missing some parameters required by Pipeline %s's parameters: %s",
-			pr.Namespace, pr.Name, err)
-		return controller.NewPermanentError(err)
-	}
 
-	// Ensure that the parameters from the PipelineRun are overriding Pipeline parameters with the same type.
-	// Weird substitution issues can occur if this is not validated (ApplyParameters() does not verify type).
-	err = resources.ValidateParamTypesMatching(pipelineSpec, pr)
-	if err != nil {
-		// This Run has failed, so we need to mark it as failed and stop reconciling it
-		pr.Status.MarkFailed(ReasonParameterTypeMismatch,
-			"PipelineRun %s/%s parameters have mismatching types with Pipeline %s/%s's parameters: %s",
-			pr.Namespace, pr.Name, pr.Namespace, pipelineMeta.Name, err)
-		return controller.NewPermanentError(err)
-	}
+		if err := pipelineSpec.Validate(ctx); err != nil {
+			// This Run has failed, so we need to mark it as failed and stop reconciling it
+			pr.Status.MarkFailed(ReasonFailedValidation,
+				"Pipeline %s/%s can't be Run; it has an invalid spec: %s",
+				pipelineMeta.Namespace, pipelineMeta.Name, err)
+			return controller.NewPermanentError(err)
+		}
 
-	// Ensure that the workspaces expected by the Pipeline are provided by the PipelineRun.
-	if err := resources.ValidateWorkspaceBindings(pipelineSpec, pr); err != nil {
-		pr.Status.MarkFailed(ReasonInvalidWorkspaceBinding,
-			"PipelineRun %s/%s doesn't bind Pipeline %s/%s's Workspaces correctly: %s",
-			pr.Namespace, pr.Name, pr.Namespace, pipelineMeta.Name, err)
-		return controller.NewPermanentError(err)
-	}
+		if err := resources.ValidateResourceBindings(pipelineSpec, pr); err != nil {
+			// This Run has failed, so we need to mark it as failed and stop reconciling it
+			pr.Status.MarkFailed(ReasonInvalidBindings,
+				"PipelineRun %s/%s doesn't bind Pipeline %s/%s's PipelineResources correctly: %s",
+				pr.Namespace, pr.Name, pr.Namespace, pipelineMeta.Name, err)
+			return controller.NewPermanentError(err)
+		} */
+	/*
+		providedResources, err := resources.GetResourcesFromBindings(pr, c.resourceLister.PipelineResources(pr.Namespace).Get)
+		if err != nil {
+			if errors.IsNotFound(err) && tknreconciler.IsYoungResource(pr) {
+				// For newly created resources, don't fail immediately.
+				// Instead return an (non-permanent) error, which will prompt the
+				// controller to requeue the key with backoff.
+				logger.Warnf("References for pipelinerun %s not found: %v", pr.Name, err)
+				pr.Status.MarkRunning(ReasonCouldntGetResource,
+					"Unable to resolve dependencies for %q: %v", pr.Name, err)
+				return err
+			}
+			// This Run has failed, so we need to mark it as failed and stop reconciling it
+			pr.Status.MarkFailed(ReasonCouldntGetResource,
+				"PipelineRun %s/%s can't be Run; it tries to bind Resources that don't exist: %s",
+				pipelineMeta.Namespace, pr.Name, err)
+			return controller.NewPermanentError(err)
+		} */
+	/*
+		// Ensure that the PipelineRun provides all the parameters required by the Pipeline
+		if err := resources.ValidateRequiredParametersProvided(&pipelineSpec.Params, &pr.Spec.Params); err != nil {
+			// This Run has failed, so we need to mark it as failed and stop reconciling it
+			pr.Status.MarkFailed(ReasonParameterMissing,
+				"PipelineRun %s parameters is missing some parameters required by Pipeline %s's parameters: %s",
+				pr.Namespace, pr.Name, err)
+			return controller.NewPermanentError(err)
+		}
 
-	// Ensure that the ServiceAccountNames defined are correct.
-	// This is "deprecated".
-	if err := resources.ValidateServiceaccountMapping(pipelineSpec, pr); err != nil {
-		pr.Status.MarkFailed(ReasonInvalidServiceAccountMapping,
-			"PipelineRun %s/%s doesn't define ServiceAccountNames correctly: %s",
-			pr.Namespace, pr.Name, err)
-		return controller.NewPermanentError(err)
-	}
+		// Ensure that the parameters from the PipelineRun are overriding Pipeline parameters with the same type.
+		// Weird substitution issues can occur if this is not validated (ApplyParameters() does not verify type).
+		err = resources.ValidateParamTypesMatching(pipelineSpec, pr)
+		if err != nil {
+			// This Run has failed, so we need to mark it as failed and stop reconciling it
+			pr.Status.MarkFailed(ReasonParameterTypeMismatch,
+				"PipelineRun %s/%s parameters have mismatching types with Pipeline %s/%s's parameters: %s",
+				pr.Namespace, pr.Name, pr.Namespace, pipelineMeta.Name, err)
+			return controller.NewPermanentError(err)
+		}
+
+		// Ensure that the workspaces expected by the Pipeline are provided by the PipelineRun.
+		if err := resources.ValidateWorkspaceBindings(pipelineSpec, pr); err != nil {
+			pr.Status.MarkFailed(ReasonInvalidWorkspaceBinding,
+				"PipelineRun %s/%s doesn't bind Pipeline %s/%s's Workspaces correctly: %s",
+				pr.Namespace, pr.Name, pr.Namespace, pipelineMeta.Name, err)
+			return controller.NewPermanentError(err)
+		}
+
+		// Ensure that the ServiceAccountNames defined are correct.
+		// This is "deprecated".
+		if err := resources.ValidateServiceaccountMapping(pipelineSpec, pr); err != nil {
+			pr.Status.MarkFailed(ReasonInvalidServiceAccountMapping,
+				"PipelineRun %s/%s doesn't define ServiceAccountNames correctly: %s",
+				pr.Namespace, pr.Name, err)
+			return controller.NewPermanentError(err)
+		} */
 
 	// Ensure that the TaskRunSpecs defined are correct.
 	if err := resources.ValidateTaskRunSpecs(pipelineSpec, pr); err != nil {
@@ -477,11 +481,13 @@ func (c *Reconciler) reconcile(ctx context.Context, pr *v1beta1.PipelineRun, get
 	if len(pipelineSpec.Finally) > 0 {
 		tasks = append(tasks, pipelineSpec.Finally...)
 	}
+	providedResources := make(map[string]*v1alpha1.PipelineResource)
 	pipelineRunState, err := c.resolvePipelineState(ctx, tasks, pipelineMeta, pr, providedResources)
 	if err != nil {
 		return err
 	}
 
+	dfinally := dag.NewGraph()
 	// Build PipelineRunFacts with a list of resolved pipeline tasks,
 	// dag tasks graph and final tasks graph
 	pipelineRunFacts := &resources.PipelineRunFacts{
@@ -504,15 +510,16 @@ func (c *Reconciler) reconcile(ctx context.Context, pr *v1beta1.PipelineRun, get
 	}
 
 	// check if pipeline run is not gracefully cancelled and there are active task runs, which require cancelling
-	if cfg.FeatureFlags.EnableAPIFields == apisconfig.AlphaAPIFields &&
-		pr.IsGracefullyCancelled() && pipelineRunFacts.IsRunning() {
-		// If the pipelinerun is cancelled, cancel tasks, but run finally
-		err := gracefullyCancelPipelineRun(ctx, logger, pr, c.PipelineClientSet)
-		if err != nil {
-			// failed to cancel tasks, maybe retry would help (don't return permanent error)
-			return err
-		}
-	}
+	/*
+		if cfg.FeatureFlags.EnableAPIFields == apisconfig.AlphaAPIFields &&
+			pr.IsGracefullyCancelled() && pipelineRunFacts.IsRunning() {
+			// If the pipelinerun is cancelled, cancel tasks, but run finally
+			err := gracefullyCancelPipelineRun(ctx, logger, pr, c.PipelineClientSet)
+			if err != nil {
+				// failed to cancel tasks, maybe retry would help (don't return permanent error)
+				return err
+			}
+		} */
 
 	if pipelineRunFacts.State.IsBeforeFirstTaskRun() {
 		if err := resources.ValidatePipelineTaskResults(pipelineRunFacts.State); err != nil {
@@ -533,29 +540,32 @@ func (c *Reconciler) reconcile(ctx context.Context, pr *v1beta1.PipelineRun, get
 			return controller.NewPermanentError(err)
 		}
 
-		if pr.HasVolumeClaimTemplate() {
-			// create workspace PVC from template
-			if err = c.pvcHandler.CreatePersistentVolumeClaimsForWorkspaces(ctx, pr.Spec.Workspaces, *kmeta.NewControllerRef(pr), pr.Namespace); err != nil {
-				logger.Errorf("Failed to create PVC for PipelineRun %s: %v", pr.Name, err)
-				pr.Status.MarkFailed(volumeclaim.ReasonCouldntCreateWorkspacePVC,
-					"Failed to create PVC for PipelineRun %s/%s Workspaces correctly: %s",
-					pr.Namespace, pr.Name, err)
-				return controller.NewPermanentError(err)
+		/*
+			if pr.HasVolumeClaimTemplate() {
+				// create workspace PVC from template
+				if err = c.pvcHandler.CreatePersistentVolumeClaimsForWorkspaces(ctx, pr.Spec.Workspaces, *kmeta.NewControllerRef(pr), pr.Namespace); err != nil {
+					logger.Errorf("Failed to create PVC for PipelineRun %s: %v", pr.Name, err)
+					pr.Status.MarkFailed(volumeclaim.ReasonCouldntCreateWorkspacePVC,
+						"Failed to create PVC for PipelineRun %s/%s Workspaces correctly: %s",
+						pr.Namespace, pr.Name, err)
+					return controller.NewPermanentError(err)
+				}
 			}
-		}
 
-		if !c.isAffinityAssistantDisabled(ctx) {
-			// create Affinity Assistant (StatefulSet) so that taskRun pods that share workspace PVC achieve Node Affinity
-			if err = c.createAffinityAssistants(ctx, pr.Spec.Workspaces, pr, pr.Namespace); err != nil {
-				logger.Errorf("Failed to create affinity assistant StatefulSet for PipelineRun %s: %v", pr.Name, err)
-				pr.Status.MarkFailed(ReasonCouldntCreateAffinityAssistantStatefulSet,
-					"Failed to create StatefulSet for PipelineRun %s/%s correctly: %s",
-					pr.Namespace, pr.Name, err)
-				return controller.NewPermanentError(err)
+			if !c.isAffinityAssistantDisabled(ctx) {
+				// create Affinity Assistant (StatefulSet) so that taskRun pods that share workspace PVC achieve Node Affinity
+				if err = c.createAffinityAssistants(ctx, pr.Spec.Workspaces, pr, pr.Namespace); err != nil {
+					logger.Errorf("Failed to create affinity assistant StatefulSet for PipelineRun %s: %v", pr.Name, err)
+					pr.Status.MarkFailed(ReasonCouldntCreateAffinityAssistantStatefulSet,
+						"Failed to create StatefulSet for PipelineRun %s/%s correctly: %s",
+						pr.Namespace, pr.Name, err)
+					return controller.NewPermanentError(err)
+				}
 			}
-		}
+		*/
 	}
 
+	// FIXME
 	as, err := artifacts.InitializeArtifactStorage(ctx, c.Images, pr, pipelineSpec, c.KubeClientSet)
 	if err != nil {
 		logger.Infof("PipelineRun failed to initialize artifact storage %s", pr.Name)
@@ -566,9 +576,10 @@ func (c *Reconciler) reconcile(ctx context.Context, pr *v1beta1.PipelineRun, get
 		return err
 	}
 
-	if err := c.processRunTimeouts(ctx, pr, pipelineRunState); err != nil {
-		return err
-	}
+	/*
+		if err := c.processRunTimeouts(ctx, pr, pipelineRunState); err != nil {
+			return err
+		} */
 
 	// Reset the skipped status to trigger recalculation
 	pipelineRunFacts.ResetSkippedCache()
