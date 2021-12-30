@@ -3821,6 +3821,7 @@ func TestGetTaskRunTimeout(t *testing.T) {
 		pr       *v1beta1.PipelineRun
 		rprt     *resources.ResolvedPipelineRunTask
 		expected *metav1.Duration
+		wantErr  bool
 	}{{
 		name: "nil timeout duration",
 		pr: &v1beta1.PipelineRun{
@@ -3899,7 +3900,8 @@ func TestGetTaskRunTimeout(t *testing.T) {
 				Timeout: nil,
 			},
 		},
-		expected: &metav1.Duration{Duration: 1 * time.Second},
+		expected: nil,
+		wantErr:  true,
 	}, {
 		name: "taskrun being created with timeout for PipelineTask",
 		pr: &v1beta1.PipelineRun{
@@ -4034,7 +4036,11 @@ func TestGetTaskRunTimeout(t *testing.T) {
 
 	for _, tc := range tcs {
 		t.Run(tc.name, func(t *testing.T) {
-			if d := cmp.Diff(getTaskRunTimeout(context.TODO(), tc.pr, tc.rprt), tc.expected); d != "" {
+			timeRemaining, err := getTaskRunTimeRemaining(context.TODO(), tc.pr, tc.rprt)
+			if (err != nil) != tc.wantErr {
+				t.Errorf("wantErr was %v but got err %v", tc.wantErr, err)
+			}
+			if d := cmp.Diff(timeRemaining, tc.expected); d != "" {
 				t.Errorf("Unexpected task run timeout. Diff %s", diff.PrintWantGot(d))
 			}
 		})
@@ -4051,6 +4057,7 @@ func TestGetFinallyTaskRunTimeout(t *testing.T) {
 		pr       *v1beta1.PipelineRun
 		rprt     *resources.ResolvedPipelineRunTask
 		expected *metav1.Duration
+		wantErr  bool
 	}{{
 		name: "nil timeout duration",
 		pr: &v1beta1.PipelineRun{
@@ -4088,7 +4095,7 @@ func TestGetFinallyTaskRunTimeout(t *testing.T) {
 		},
 		expected: &metav1.Duration{Duration: 20 * time.Minute},
 	}, {
-		name: "taskrun being created after timeout expired",
+		name: "taskrun being created after pipeline.timeout expired",
 		pr: &v1beta1.PipelineRun{
 			ObjectMeta: baseObjectMeta(prName, ns),
 			Spec: v1beta1.PipelineRunSpec{
@@ -4104,7 +4111,8 @@ func TestGetFinallyTaskRunTimeout(t *testing.T) {
 		rprt: &resources.ResolvedPipelineRunTask{
 			PipelineTask: &v1beta1.PipelineTask{},
 		},
-		expected: &metav1.Duration{Duration: 1 * time.Second},
+		expected: nil,
+		wantErr:  true,
 	}, {
 		name: "40m timeout duration, 20m taskstimeout duration",
 		pr: &v1beta1.PipelineRun{
@@ -4215,8 +4223,12 @@ func TestGetFinallyTaskRunTimeout(t *testing.T) {
 
 	for _, tc := range tcs {
 		t.Run(tc.name, func(t *testing.T) {
-			if d := cmp.Diff(tc.expected, getFinallyTaskRunTimeout(context.TODO(), tc.pr, tc.rprt)); d != "" {
-				t.Errorf("Unexpected finally task run timeout. Diff %s", diff.PrintWantGot(d))
+			timeRemaining, err := getFinallyTaskRunTimeRemaining(context.TODO(), tc.pr, tc.rprt)
+			if (err != nil) != tc.wantErr {
+				t.Errorf("wantErr was %v but got err %v", tc.wantErr, err)
+			}
+			if d := cmp.Diff(timeRemaining, tc.expected); d != "" {
+				t.Errorf("Unexpected task run timeout. Diff %s", diff.PrintWantGot(d))
 			}
 		})
 	}
