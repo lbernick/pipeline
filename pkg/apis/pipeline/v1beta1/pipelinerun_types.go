@@ -390,6 +390,8 @@ type PipelineRunStatusFields struct {
 	// list of tasks that were skipped due to when expressions evaluating to false
 	// +optional
 	SkippedTasks []SkippedTask `json:"skippedTasks,omitempty"`
+
+	PodName string `json:"podName"`
 }
 
 // SkippedTask is used to describe the Tasks that were skipped due to their When Expressions
