@@ -14,5 +14,5 @@ See the License for the specific language governing permissions and
 limitations under the License.
 */
 
-// Package limitrange defines logic for supporting Kubernetes LimitRange for the specific Tekton use cases
-package limitrange
+// Package podresources defines logic for supporting Kubernetes LimitRange for the specific Tekton use cases
+package podresources
