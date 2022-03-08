@@ -44,7 +44,6 @@ import (
 	"github.com/tektoncd/pipeline/pkg/reconciler/events/cloudevent"
 	"github.com/tektoncd/pipeline/pkg/reconciler/pipeline/dag"
 	"github.com/tektoncd/pipeline/pkg/reconciler/pipelinerun/resources"
-	"github.com/tektoncd/pipeline/pkg/reconciler/taskrun"
 	tresources "github.com/tektoncd/pipeline/pkg/reconciler/taskrun/resources"
 	"github.com/tektoncd/pipeline/pkg/reconciler/volumeclaim"
 	"github.com/tektoncd/pipeline/pkg/workspace"
@@ -467,17 +466,6 @@ func (c *Reconciler) reconcile(ctx context.Context, pr *v1beta1.PipelineRun, get
 		TasksGraph:                 d,
 		FinalTasksGraph:            dfinally,
 		ScopeWhenExpressionsToTask: config.FromContextOrDefaults(ctx).FeatureFlags.ScopeWhenExpressionsToTask,
-	}
-
-	for _, rprt := range pipelineRunFacts.State {
-		if !rprt.IsCustomTask() {
-			err := taskrun.ValidateResolvedTaskResources(ctx, rprt.PipelineTask.Params, rprt.ResolvedTaskResources)
-			if err != nil {
-				logger.Errorf("Failed to validate pipelinerun %q with error %v", pr.Name, err)
-				pr.Status.MarkFailed(ReasonFailedValidation, err.Error())
-				return controller.NewPermanentError(err)
-			}
-		}
 	}
 
 	// check if pipeline run is not gracefully cancelled and there are active task runs, which require cancelling
