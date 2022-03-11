@@ -107,6 +107,11 @@ func (t ResolvedPipelineRunTask) IsDone(facts *PipelineRunFacts) bool {
 	return t.Skip(facts).IsSkipped || t.IsSuccessful() || t.IsFailure()
 }
 
+// atLeastOneAttemptDone returns true if a task is skipped, succeeded, or failed, but may have remaining retries
+func (t ResolvedPipelineRunTask) atLeastOneAttemptDone(facts *PipelineRunFacts) bool {
+	return t.Skip(facts).IsSkipped || t.IsSuccessful() || t.mostRecentAttemptFailed()
+}
+
 // IsRunning returns true only if the task is neither succeeded, cancelled nor failed
 func (t ResolvedPipelineRunTask) IsRunning() bool {
 	if t.IsCustomTask() {
@@ -142,6 +147,21 @@ func (t ResolvedPipelineRunTask) IsFailure() bool {
 	if t.IsSuccessful() {
 		return false
 	}
+	return t.hasFailedStatus() && !t.HasRemainingRetries()
+}
+
+// mostRecentAttemptFailed returns true only if the run has failed, regardless of whether it can be retried.
+func (t ResolvedPipelineRunTask) mostRecentAttemptFailed() bool {
+	if t.IsCancelled() {
+		return true
+	}
+	if t.IsSuccessful() {
+		return false
+	}
+	return t.hasFailedStatus()
+}
+
+func (t ResolvedPipelineRunTask) hasFailedStatus() bool {
 	var c *apis.Condition
 	var isDone bool
 	if t.IsCustomTask() {
@@ -157,7 +177,7 @@ func (t ResolvedPipelineRunTask) IsFailure() bool {
 		c = t.TaskRun.Status.GetCondition(apis.ConditionSucceeded)
 		isDone = t.TaskRun.IsDone()
 	}
-	return isDone && c.IsFalse() && !t.HasRemainingRetries()
+	return isDone && c.IsFalse()
 }
 
 // HasRemainingRetries returns true only when the number of retries already attempted

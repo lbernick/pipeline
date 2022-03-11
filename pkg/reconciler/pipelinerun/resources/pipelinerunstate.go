@@ -290,6 +290,12 @@ func (facts *PipelineRunFacts) IsRunning() bool {
 	return false
 }
 
+// IsCancelled returns true if the PipelineRun won't be scheduling any new Task because it was cancelled
+func (facts *PipelineRunFacts) IsCancelled() bool {
+	return facts.SpecStatus == v1beta1.PipelineRunSpecStatusCancelledDeprecated ||
+		facts.SpecStatus == v1beta1.PipelineRunSpecStatusCancelled
+}
+
 // IsGracefullyCancelled returns true if the PipelineRun won't be scheduling any new Task because it was gracefully cancelled
 func (facts *PipelineRunFacts) IsGracefullyCancelled() bool {
 	return facts.SpecStatus == v1beta1.PipelineRunSpecStatusCancelledRunFinally
@@ -302,10 +308,10 @@ func (facts *PipelineRunFacts) IsGracefullyStopped() bool {
 
 // DAGExecutionQueue returns a list of DAG tasks which needs to be scheduled next
 func (facts *PipelineRunFacts) DAGExecutionQueue() (PipelineRunState, error) {
-	tasks := PipelineRunState{}
-	// when pipeline run is stopping, gracefully cancelled or stopped, do not schedule any new task and only
+	var tasks PipelineRunState
+	// when pipeline run is stopping, cancelled, gracefully cancelled or stopped, do not schedule any new task and only
 	// wait for all running tasks to complete and report their status
-	if !facts.IsStopping() && !facts.IsGracefullyCancelled() && !facts.IsGracefullyStopped() {
+	if !facts.IsStopping() && !facts.IsCancelled() && !facts.IsGracefullyCancelled() && !facts.IsGracefullyStopped() {
 		// candidateTasks is initialized to DAG root nodes to start pipeline execution
 		// candidateTasks is derived based on successfully finished tasks and/or skipped tasks
 		candidateTasks, err := dag.GetSchedulable(facts.TasksGraph, facts.successfulOrSkippedDAGTasks()...)
@@ -318,22 +324,26 @@ func (facts *PipelineRunFacts) DAGExecutionQueue() (PipelineRunState, error) {
 }
 
 // GetFinalTasks returns a list of final tasks without any taskRun associated with it
-// GetFinalTasks returns final tasks only when all DAG tasks have finished executing successfully or skipped or
-// any one DAG task resulted in failure
+// GetFinalTasks returns final tasks only when all DAG tasks have
+// finished executing at least one attempt or have been skipped.
 func (facts *PipelineRunFacts) GetFinalTasks() PipelineRunState {
 	tasks := PipelineRunState{}
 	finalCandidates := sets.NewString()
-	// check either pipeline has finished executing all DAG pipelineTasks
-	// or any one of the DAG pipelineTask has failed
-	if facts.checkDAGTasksDone() {
-		// return list of tasks with all final tasks
-		for _, t := range facts.State {
-			if facts.isFinalTask(t.PipelineTask.Name) && !t.IsSuccessful() {
-				finalCandidates.Insert(t.PipelineTask.Name)
-			}
+	// check either pipeline has finished executing all DAG pipelineTasks,
+	// where "finished executing" means succeeded, failed, or skipped
+	if facts.IsStopping() || facts.IsCancelled() || facts.IsGracefullyCancelled() || facts.IsGracefullyStopped() {
+		if !facts.checkTasksDone(facts.TasksGraph, false /*runRetries*/) {
+			return tasks
 		}
-		tasks = facts.State.getNextTasks(finalCandidates)
+	} else if !facts.checkDAGTasksDone() {
+		return tasks
 	}
+	for _, t := range facts.State {
+		if facts.isFinalTask(t.PipelineTask.Name) && !t.IsSuccessful() {
+			finalCandidates.Insert(t.PipelineTask.Name)
+		}
+	}
+	tasks = facts.State.getNextTasks(finalCandidates)
 	return tasks
 }
 
@@ -512,12 +522,19 @@ func (facts *PipelineRunFacts) successfulOrSkippedDAGTasks() []string {
 }
 
 // checkTasksDone returns true if all tasks from the specified graph are finished executing
-// a task is considered done if it has failed/succeeded/skipped
-func (facts *PipelineRunFacts) checkTasksDone(d *dag.Graph) bool {
+// a task is considered done if it has failed/succeeded/skipped.
+// If runRetries is true, a task will not be considered done until it has exhausted its retries in case of failure.
+func (facts *PipelineRunFacts) checkTasksDone(d *dag.Graph, runRetries bool) bool {
 	for _, t := range facts.State {
 		if isTaskInGraph(t.PipelineTask.Name, d) {
-			if !t.IsDone(facts) {
-				return false
+			if runRetries {
+				if !t.IsDone(facts) {
+					return false
+				}
+			} else {
+				if !t.atLeastOneAttemptDone(facts) {
+					return false
+				}
 			}
 		}
 	}
@@ -526,12 +543,12 @@ func (facts *PipelineRunFacts) checkTasksDone(d *dag.Graph) bool {
 
 // check if all DAG tasks done executing (succeeded, failed, or skipped)
 func (facts *PipelineRunFacts) checkDAGTasksDone() bool {
-	return facts.checkTasksDone(facts.TasksGraph)
+	return facts.checkTasksDone(facts.TasksGraph, true)
 }
 
 // check if all finally tasks done executing (succeeded or failed)
 func (facts *PipelineRunFacts) checkFinalTasksDone() bool {
-	return facts.checkTasksDone(facts.FinalTasksGraph)
+	return facts.checkTasksDone(facts.FinalTasksGraph, true)
 }
 
 // getPipelineTasksCount returns the count of successful tasks, failed tasks, cancelled tasks, skipped task, and incomplete tasks

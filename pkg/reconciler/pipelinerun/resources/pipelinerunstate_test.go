@@ -220,7 +220,7 @@ func TestPipelineRunFacts_CheckDAGTasksDoneDone(t *testing.T) {
 		t.Run(tc.name, func(t *testing.T) {
 			d, err := dagFromState(tc.state)
 			if err != nil {
-				t.Fatalf("Unexpected error while buildig DAG for state %v: %v", tc.state, err)
+				t.Fatalf("Unexpected error while building DAG for state %v: %v", tc.state, err)
 			}
 			facts := PipelineRunFacts{
 				State:           tc.state,
@@ -228,7 +228,7 @@ func TestPipelineRunFacts_CheckDAGTasksDoneDone(t *testing.T) {
 				FinalTasksGraph: &dag.Graph{},
 			}
 
-			isDone := facts.checkTasksDone(d)
+			isDone := facts.checkTasksDone(d, true /*runRetries=*/)
 			if d := cmp.Diff(tc.expected, isDone); d != "" {
 				t.Errorf("Didn't get expected checkTasksDone %s", diff.PrintWantGot(d))
 			}
@@ -600,6 +600,183 @@ func TestGetNextTaskWithRetries(t *testing.T) {
 	}
 }
 
+// TestDAGExecutionQueue tests the DAGExecutionQueue function for PipelineTasks
+// in different states (without dependencies on each other) and the PipelineRun in different states.
+func TestDAGExecutionQueue(t *testing.T) {
+	createdTask := ResolvedPipelineRunTask{
+		PipelineTask: &v1beta1.PipelineTask{
+			Name:    "createdtask",
+			TaskRef: &v1beta1.TaskRef{Name: "task"},
+		},
+		TaskRunName: "createdtask",
+		ResolvedTaskResources: &resources.ResolvedTaskResources{
+			TaskSpec: &task.Spec,
+		},
+	}
+	createdRun := ResolvedPipelineRunTask{
+		PipelineTask: &v1beta1.PipelineTask{
+			Name:    "createdrun",
+			TaskRef: &v1beta1.TaskRef{Name: "task"},
+		},
+		RunName:    "createdrun",
+		CustomTask: true,
+	}
+	runningTask := ResolvedPipelineRunTask{
+		PipelineTask: &v1beta1.PipelineTask{
+			Name:    "runningtask",
+			TaskRef: &v1beta1.TaskRef{Name: "task"},
+		},
+		TaskRunName: "runningtask",
+		TaskRun:     newTaskRun(trs[0]),
+		ResolvedTaskResources: &resources.ResolvedTaskResources{
+			TaskSpec: &task.Spec,
+		},
+	}
+	runningRun := ResolvedPipelineRunTask{
+		PipelineTask: &v1beta1.PipelineTask{
+			Name:    "runningrun",
+			TaskRef: &v1beta1.TaskRef{Name: "task"},
+		},
+		RunName:    "runningrun",
+		Run:        newRun(runs[0]),
+		CustomTask: true,
+	}
+	successfulTask := ResolvedPipelineRunTask{
+		PipelineTask: &v1beta1.PipelineTask{
+			Name:    "successfultask",
+			TaskRef: &v1beta1.TaskRef{Name: "task"},
+		},
+		TaskRunName: "successfultask",
+		TaskRun:     makeSucceeded(trs[0]),
+		ResolvedTaskResources: &resources.ResolvedTaskResources{
+			TaskSpec: &task.Spec,
+		},
+	}
+	successfulRun := ResolvedPipelineRunTask{
+		PipelineTask: &v1beta1.PipelineTask{
+			Name:    "successfulrun",
+			TaskRef: &v1beta1.TaskRef{Name: "task"},
+		},
+		RunName:    "successfulrun",
+		Run:        makeRunSucceeded(runs[0]),
+		CustomTask: true,
+	}
+	failedTask := ResolvedPipelineRunTask{
+		PipelineTask: &v1beta1.PipelineTask{
+			Name:    "failedtask",
+			TaskRef: &v1beta1.TaskRef{Name: "task"},
+		},
+		TaskRunName: "failedtask",
+		TaskRun:     makeFailed(trs[0]),
+		ResolvedTaskResources: &resources.ResolvedTaskResources{
+			TaskSpec: &task.Spec,
+		},
+	}
+	failedRun := ResolvedPipelineRunTask{
+		PipelineTask: &v1beta1.PipelineTask{
+			Name:    "failedrun",
+			TaskRef: &v1beta1.TaskRef{Name: "task"},
+		},
+		RunName:    "failedrun",
+		Run:        makeRunFailed(runs[0]),
+		CustomTask: true,
+	}
+	failedTaskWithRetries := ResolvedPipelineRunTask{
+		PipelineTask: &v1beta1.PipelineTask{
+			Name:    "failedtaskwithretries",
+			TaskRef: &v1beta1.TaskRef{Name: "task"},
+			Retries: 1,
+		},
+		TaskRunName: "failedtaskwithretries",
+		TaskRun:     makeFailed(trs[0]),
+		ResolvedTaskResources: &resources.ResolvedTaskResources{
+			TaskSpec: &task.Spec,
+		},
+	}
+	failedRunWithRetries := ResolvedPipelineRunTask{
+		PipelineTask: &v1beta1.PipelineTask{
+			Name:    "failedrunwithretries",
+			TaskRef: &v1beta1.TaskRef{Name: "task"},
+			Retries: 1,
+		},
+		RunName:    "failedrunwithretries",
+		Run:        makeRunFailed(runs[0]),
+		CustomTask: true,
+	}
+	tcs := []struct {
+		name       string
+		state      PipelineRunState
+		specStatus v1beta1.PipelineRunSpecStatus
+		want       PipelineRunState
+	}{{
+		name:       "cancelled",
+		specStatus: v1beta1.PipelineRunSpecStatusCancelled,
+		state: PipelineRunState{
+			&createdTask, &createdRun,
+			&runningTask, &runningRun, &successfulTask, &successfulRun,
+			&failedTaskWithRetries, &failedRunWithRetries,
+		},
+	}, {
+		name:       "gracefully cancelled",
+		specStatus: v1beta1.PipelineRunSpecStatusCancelledRunFinally,
+		state: PipelineRunState{
+			&createdTask, &createdRun,
+			&runningTask, &runningRun, &successfulTask, &successfulRun,
+			&failedTaskWithRetries, &failedRunWithRetries,
+		},
+	}, {
+		name:       "gracefully stopped",
+		specStatus: v1beta1.PipelineRunSpecStatusStoppedRunFinally,
+		state: PipelineRunState{
+			&createdTask, &createdRun, &runningTask, &runningRun, &successfulTask, &successfulRun,
+			&failedTaskWithRetries, &failedRunWithRetries,
+		},
+	}, {
+		name: "running",
+		state: PipelineRunState{
+			&createdTask, &createdRun, &runningTask, &runningRun,
+			&failedTaskWithRetries, &failedRunWithRetries, &successfulTask, &successfulRun,
+		},
+		want: PipelineRunState{&createdTask, &createdRun, &failedTaskWithRetries, &failedRunWithRetries},
+	}, {
+		name: "stopped",
+		state: PipelineRunState{
+			&createdTask, &createdRun, &runningTask, &runningRun,
+			&successfulTask, &successfulRun, &failedTask, &failedRun,
+		},
+	}, {
+		name: "stopped with retryable tasks",
+		state: PipelineRunState{
+			&createdTask, &createdRun, &runningTask, &runningRun, &successfulTask, &successfulRun,
+			&failedTask, &failedRun, &failedTaskWithRetries, &failedRunWithRetries,
+		},
+	}, {
+		name:  "all tasks finished",
+		state: PipelineRunState{&successfulTask, &successfulRun, &failedTask, &failedRun},
+	}}
+	for _, tc := range tcs {
+		t.Run(tc.name, func(t *testing.T) {
+			d, err := dagFromState(tc.state)
+			if err != nil {
+				t.Fatalf("Unexpected error while building DAG for state %v: %v", tc.state, err)
+			}
+			facts := PipelineRunFacts{
+				State:           tc.state,
+				SpecStatus:      tc.specStatus,
+				TasksGraph:      d,
+				FinalTasksGraph: &dag.Graph{},
+			}
+			queue, err := facts.DAGExecutionQueue()
+			if err != nil {
+				t.Errorf("unexpected error getting DAG execution queue: %s", err)
+			}
+			if d := cmp.Diff(tc.want, queue); d != "" {
+				t.Errorf("Didn't get expected execution queue: %s", diff.PrintWantGot(d))
+			}
+		})
+	}
+}
+
 func TestPipelineRunState_SuccessfulOrSkippedDAGTasks(t *testing.T) {
 	largePipelineState := buildPipelineStateWithLargeDepencyGraph(t)
 	tcs := []struct {
@@ -910,11 +1087,11 @@ func TestPipelineRunState_GetFinalTasks(t *testing.T) {
 	for _, tc := range tcs {
 		dagGraph, err := dag.Build(v1beta1.PipelineTaskList(tc.DAGTasks), v1beta1.PipelineTaskList(tc.DAGTasks).Deps())
 		if err != nil {
-			t.Fatalf("Unexpected error while buildig DAG for pipelineTasks %v: %v", tc.DAGTasks, err)
+			t.Fatalf("Unexpected error while building DAG for pipelineTasks %v: %v", tc.DAGTasks, err)
 		}
 		finalGraph, err := dag.Build(v1beta1.PipelineTaskList(tc.finalTasks), map[string][]string{})
 		if err != nil {
-			t.Fatalf("Unexpected error while buildig DAG for final pipelineTasks %v: %v", tc.finalTasks, err)
+			t.Fatalf("Unexpected error while building DAG for final pipelineTasks %v: %v", tc.finalTasks, err)
 		}
 		t.Run(tc.name, func(t *testing.T) {
 			facts := PipelineRunFacts{
