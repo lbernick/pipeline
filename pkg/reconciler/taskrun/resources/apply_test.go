@@ -50,7 +50,7 @@ var (
 
 	simpleTaskSpec = &v1beta1.TaskSpec{
 		Sidecars: []v1beta1.Sidecar{{
-			Container: corev1.Container{
+			Container: v1beta1.Container{
 				Name:  "foo",
 				Image: `$(params["myimage"])`,
 				Env: []corev1.EnvVar{{
@@ -59,37 +59,37 @@ var (
 				}},
 			},
 		}},
-		StepTemplate: &corev1.Container{
+		StepTemplate: &v1beta1.Container{
 			Env: []corev1.EnvVar{{
 				Name:  "template-var",
 				Value: `$(params["FOO"])`,
 			}},
 		},
-		Steps: []v1beta1.Step{{Container: corev1.Container{
+		Steps: []v1beta1.Step{{Container: v1beta1.Container{
 			Name:  "foo",
 			Image: "$(params.myimage)",
-		}}, {Container: corev1.Container{
+		}}, {Container: v1beta1.Container{
 			Name:       "baz",
 			Image:      "bat",
 			WorkingDir: "$(inputs.resources.workspace.path)",
 			Args:       []string{"$(inputs.resources.workspace.url)"},
-		}}, {Container: corev1.Container{
+		}}, {Container: v1beta1.Container{
 			Name:  "qux",
 			Image: "$(params.something)",
 			Args:  []string{"$(outputs.resources.imageToUse.url)"},
-		}}, {Container: corev1.Container{
+		}}, {Container: v1beta1.Container{
 			Name:  "foo",
 			Image: `$(params["myimage"])`,
-		}}, {Container: corev1.Container{
+		}}, {Container: v1beta1.Container{
 			Name:       "baz",
 			Image:      "$(params.somethingelse)",
 			WorkingDir: "$(inputs.resources.workspace.path)",
 			Args:       []string{"$(inputs.resources.workspace.url)"},
-		}}, {Container: corev1.Container{
+		}}, {Container: v1beta1.Container{
 			Name:  "qux",
 			Image: "quux",
 			Args:  []string{"$(outputs.resources.imageToUse.url)"},
-		}}, {Container: corev1.Container{
+		}}, {Container: v1beta1.Container{
 			Name:  "foo",
 			Image: "busybox:$(params.FOO)",
 			VolumeMounts: []corev1.VolumeMount{{
@@ -97,7 +97,7 @@ var (
 				MountPath: "path/to/$(params.FOO)",
 				SubPath:   "sub/$(params.FOO)/path",
 			}},
-		}}, {Container: corev1.Container{
+		}}, {Container: v1beta1.Container{
 			Name:  "foo",
 			Image: "busybox:$(params.FOO)",
 			Env: []corev1.EnvVar{{
@@ -131,10 +131,10 @@ var (
 					LocalObjectReference: corev1.LocalObjectReference{Name: "secret-$(params.FOO)"},
 				},
 			}},
-		}}, {Container: corev1.Container{
+		}}, {Container: v1beta1.Container{
 			Name:  "outputs-resources-path-ab",
 			Image: "$(outputs.resources.imageToUse-ab.path)",
-		}}, {Container: corev1.Container{
+		}}, {Container: v1beta1.Container{
 			Name:  "outputs-resources-path-re",
 			Image: "$(outputs.resources.imageToUse-re.path)",
 		}}},
@@ -224,7 +224,7 @@ var (
 	}
 
 	gcsTaskSpec = &v1beta1.TaskSpec{
-		Steps: []v1beta1.Step{{Container: corev1.Container{
+		Steps: []v1beta1.Step{{Container: v1beta1.Container{
 			Name:  "foobar",
 			Image: "someImage",
 			Args:  []string{"$(outputs.resources.bucket.path)"},
@@ -239,10 +239,10 @@ var (
 	}
 
 	arrayParamTaskSpec = &v1beta1.TaskSpec{
-		Steps: []v1beta1.Step{{Container: corev1.Container{
+		Steps: []v1beta1.Step{{Container: v1beta1.Container{
 			Name:  "simple-image",
 			Image: "some-image",
-		}}, {Container: corev1.Container{
+		}}, {Container: v1beta1.Container{
 			Name:    "image-with-c-specified",
 			Image:   "some-other-image",
 			Command: []string{"echo"},
@@ -251,10 +251,10 @@ var (
 	}
 
 	arrayAndStringParamTaskSpec = &v1beta1.TaskSpec{
-		Steps: []v1beta1.Step{{Container: corev1.Container{
+		Steps: []v1beta1.Step{{Container: v1beta1.Container{
 			Name:  "simple-image",
 			Image: "some-image",
-		}}, {Container: corev1.Container{
+		}}, {Container: v1beta1.Container{
 			Name:    "image-with-c-specified",
 			Image:   "some-other-image",
 			Command: []string{"echo"},
@@ -263,10 +263,10 @@ var (
 	}
 
 	multipleArrayParamsTaskSpec = &v1beta1.TaskSpec{
-		Steps: []v1beta1.Step{{Container: corev1.Container{
+		Steps: []v1beta1.Step{{Container: v1beta1.Container{
 			Name:  "simple-image",
 			Image: "some-image",
-		}}, {Container: corev1.Container{
+		}}, {Container: v1beta1.Container{
 			Name:    "image-with-c-specified",
 			Image:   "some-other-image",
 			Command: []string{"cmd", "$(params.another-array-param)"},
@@ -275,10 +275,10 @@ var (
 	}
 
 	multipleArrayAndStringsParamsTaskSpec = &v1beta1.TaskSpec{
-		Steps: []v1beta1.Step{{Container: corev1.Container{
+		Steps: []v1beta1.Step{{Container: v1beta1.Container{
 			Name:  "simple-image",
 			Image: "image-$(params.string-param2)",
-		}}, {Container: corev1.Container{
+		}}, {Container: v1beta1.Container{
 			Name:    "image-with-c-specified",
 			Image:   "some-other-image",
 			Command: []string{"cmd", "$(params.array-param1)"},
@@ -641,7 +641,7 @@ func TestApplyResources(t *testing.T) {
 func TestApplyWorkspaces(t *testing.T) {
 	names.TestingSeed()
 	ts := &v1beta1.TaskSpec{
-		StepTemplate: &corev1.Container{
+		StepTemplate: &v1beta1.Container{
 			Env: []corev1.EnvVar{{
 				Name:  "template-var",
 				Value: "$(workspaces.myws.volume)",
@@ -653,12 +653,12 @@ func TestApplyWorkspaces(t *testing.T) {
 				Value: "$(workspaces.otherws.claim)",
 			}},
 		},
-		Steps: []v1beta1.Step{{Container: corev1.Container{
+		Steps: []v1beta1.Step{{Container: v1beta1.Container{
 			Name:       "$(workspaces.myws.volume)",
 			Image:      "$(workspaces.otherws.volume)",
 			WorkingDir: "$(workspaces.otherws.volume)",
 			Args:       []string{"$(workspaces.myws.path)"},
-		}}, {Container: corev1.Container{
+		}}, {Container: v1beta1.Container{
 			Name:  "foo",
 			Image: "bar",
 			VolumeMounts: []corev1.VolumeMount{{
@@ -666,7 +666,7 @@ func TestApplyWorkspaces(t *testing.T) {
 				MountPath: "path/to/$(workspaces.otherws.path)",
 				SubPath:   "$(workspaces.myws.volume)",
 			}},
-		}}, {Container: corev1.Container{
+		}}, {Container: v1beta1.Container{
 			Name:  "foo",
 			Image: "bar",
 			Env: []corev1.EnvVar{{
@@ -886,7 +886,7 @@ func TestContext(t *testing.T) {
 		tr:          v1beta1.TaskRun{},
 		spec: v1beta1.TaskSpec{
 			Steps: []v1beta1.Step{{
-				Container: corev1.Container{
+				Container: v1beta1.Container{
 					Name:  "ImageName",
 					Image: "$(context.task.name)-1",
 				},
@@ -894,7 +894,7 @@ func TestContext(t *testing.T) {
 		},
 		want: v1beta1.TaskSpec{
 			Steps: []v1beta1.Step{{
-				Container: corev1.Container{
+				Container: v1beta1.Container{
 					Name:  "ImageName",
 					Image: "Task1-1",
 				},
@@ -910,7 +910,7 @@ func TestContext(t *testing.T) {
 		},
 		spec: v1beta1.TaskSpec{
 			Steps: []v1beta1.Step{{
-				Container: corev1.Container{
+				Container: v1beta1.Container{
 					Name:  "ImageName",
 					Image: "$(context.task.name)-1",
 				},
@@ -918,7 +918,7 @@ func TestContext(t *testing.T) {
 		},
 		want: v1beta1.TaskSpec{
 			Steps: []v1beta1.Step{{
-				Container: corev1.Container{
+				Container: v1beta1.Container{
 					Name:  "ImageName",
 					Image: "Task1-1",
 				},
@@ -934,7 +934,7 @@ func TestContext(t *testing.T) {
 		},
 		spec: v1beta1.TaskSpec{
 			Steps: []v1beta1.Step{{
-				Container: corev1.Container{
+				Container: v1beta1.Container{
 					Name:  "ImageName",
 					Image: "$(context.taskRun.name)-1",
 				},
@@ -942,7 +942,7 @@ func TestContext(t *testing.T) {
 		},
 		want: v1beta1.TaskSpec{
 			Steps: []v1beta1.Step{{
-				Container: corev1.Container{
+				Container: v1beta1.Container{
 					Name:  "ImageName",
 					Image: "taskrunName-1",
 				},
@@ -954,7 +954,7 @@ func TestContext(t *testing.T) {
 		tr:          v1beta1.TaskRun{},
 		spec: v1beta1.TaskSpec{
 			Steps: []v1beta1.Step{{
-				Container: corev1.Container{
+				Container: v1beta1.Container{
 					Name:  "ImageName",
 					Image: "$(context.taskRun.name)-1",
 				},
@@ -962,7 +962,7 @@ func TestContext(t *testing.T) {
 		},
 		want: v1beta1.TaskSpec{
 			Steps: []v1beta1.Step{{
-				Container: corev1.Container{
+				Container: v1beta1.Container{
 					Name:  "ImageName",
 					Image: "-1",
 				},
@@ -974,7 +974,7 @@ func TestContext(t *testing.T) {
 		tr:          v1beta1.TaskRun{},
 		spec: v1beta1.TaskSpec{
 			Steps: []v1beta1.Step{{
-				Container: corev1.Container{
+				Container: v1beta1.Container{
 					Name:  "ImageName",
 					Image: "$(context.taskRun.namespace)-1",
 				},
@@ -982,7 +982,7 @@ func TestContext(t *testing.T) {
 		},
 		want: v1beta1.TaskSpec{
 			Steps: []v1beta1.Step{{
-				Container: corev1.Container{
+				Container: v1beta1.Container{
 					Name:  "ImageName",
 					Image: "-1",
 				},
@@ -999,7 +999,7 @@ func TestContext(t *testing.T) {
 		},
 		spec: v1beta1.TaskSpec{
 			Steps: []v1beta1.Step{{
-				Container: corev1.Container{
+				Container: v1beta1.Container{
 					Name:  "ImageName",
 					Image: "$(context.taskRun.namespace)-1",
 				},
@@ -1007,7 +1007,7 @@ func TestContext(t *testing.T) {
 		},
 		want: v1beta1.TaskSpec{
 			Steps: []v1beta1.Step{{
-				Container: corev1.Container{
+				Container: v1beta1.Container{
 					Name:  "ImageName",
 					Image: "trNamespace-1",
 				},
@@ -1018,7 +1018,7 @@ func TestContext(t *testing.T) {
 		tr:          v1beta1.TaskRun{},
 		spec: v1beta1.TaskSpec{
 			Steps: []v1beta1.Step{{
-				Container: corev1.Container{
+				Container: v1beta1.Container{
 					Name:  "ImageName",
 					Image: "$(context.task.name)-1",
 				},
@@ -1026,7 +1026,7 @@ func TestContext(t *testing.T) {
 		},
 		want: v1beta1.TaskSpec{
 			Steps: []v1beta1.Step{{
-				Container: corev1.Container{
+				Container: v1beta1.Container{
 					Name:  "ImageName",
 					Image: "-1",
 				},
@@ -1042,7 +1042,7 @@ func TestContext(t *testing.T) {
 		},
 		spec: v1beta1.TaskSpec{
 			Steps: []v1beta1.Step{{
-				Container: corev1.Container{
+				Container: v1beta1.Container{
 					Name:  "ImageName",
 					Image: "$(context.taskRun.uid)",
 				},
@@ -1050,7 +1050,7 @@ func TestContext(t *testing.T) {
 		},
 		want: v1beta1.TaskSpec{
 			Steps: []v1beta1.Step{{
-				Container: corev1.Container{
+				Container: v1beta1.Container{
 					Name:  "ImageName",
 					Image: "UID-1",
 				},
@@ -1081,7 +1081,7 @@ func TestContext(t *testing.T) {
 		},
 		spec: v1beta1.TaskSpec{
 			Steps: []v1beta1.Step{{
-				Container: corev1.Container{
+				Container: v1beta1.Container{
 					Name:  "ImageName",
 					Image: "$(context.task.retry-count)-1",
 				},
@@ -1089,7 +1089,7 @@ func TestContext(t *testing.T) {
 		},
 		want: v1beta1.TaskSpec{
 			Steps: []v1beta1.Step{{
-				Container: corev1.Container{
+				Container: v1beta1.Container{
 					Name:  "ImageName",
 					Image: "2-1",
 				},
@@ -1100,7 +1100,7 @@ func TestContext(t *testing.T) {
 		tr:          v1beta1.TaskRun{},
 		spec: v1beta1.TaskSpec{
 			Steps: []v1beta1.Step{{
-				Container: corev1.Container{
+				Container: v1beta1.Container{
 					Name:  "ImageName",
 					Image: "$(context.task.retry-count)-1",
 				},
@@ -1108,7 +1108,7 @@ func TestContext(t *testing.T) {
 		},
 		want: v1beta1.TaskSpec{
 			Steps: []v1beta1.Step{{
-				Container: corev1.Container{
+				Container: v1beta1.Container{
 					Name:  "ImageName",
 					Image: "0-1",
 				},
@@ -1135,20 +1135,20 @@ func TestTaskResults(t *testing.T) {
 			Description: "The current date in humand readable format"},
 		},
 		Steps: []v1beta1.Step{{
-			Container: corev1.Container{
+			Container: v1beta1.Container{
 				Name:  "print-date-unix-timestamp",
 				Image: "bash:latest",
 				Args:  []string{"$(results[\"current.date.unix.timestamp\"].path)"},
 			},
 			Script: "#!/usr/bin/env bash\ndate +%s | tee $(results[\"current.date.unix.timestamp\"].path)",
 		}, {
-			Container: corev1.Container{
+			Container: v1beta1.Container{
 				Name:  "print-date-human-readable",
 				Image: "bash:latest",
 			},
 			Script: "#!/usr/bin/env bash\ndate | tee $(results.current-date-human-readable.path)",
 		}, {
-			Container: corev1.Container{
+			Container: v1beta1.Container{
 				Name:  "print-date-human-readable-again",
 				Image: "bash:latest",
 			},
@@ -1171,18 +1171,18 @@ func TestApplyStepExitCodePath(t *testing.T) {
 	names.TestingSeed()
 	ts := &v1beta1.TaskSpec{
 		Steps: []v1beta1.Step{{
-			Container: corev1.Container{
+			Container: v1beta1.Container{
 				Image: "bash:latest",
 			},
 			Script: "#!/usr/bin/env bash\nexit 11",
 		}, {
-			Container: corev1.Container{
+			Container: v1beta1.Container{
 				Name:  "failing-step",
 				Image: "bash:latest",
 			},
 			Script: "#!/usr/bin/env bash\ncat $(steps.step-unnamed-0.exitCode.path)",
 		}, {
-			Container: corev1.Container{
+			Container: v1beta1.Container{
 				Name:  "check-failing-step",
 				Image: "bash:latest",
 			},
@@ -1209,7 +1209,7 @@ func TestApplyCredentialsPath(t *testing.T) {
 		description: "replacement in spec container",
 		spec: v1beta1.TaskSpec{
 			Steps: []v1beta1.Step{{
-				Container: corev1.Container{
+				Container: v1beta1.Container{
 					Command: []string{"cp"},
 					Args:    []string{"-R", "$(credentials.path)/", "$HOME"},
 				},
@@ -1218,7 +1218,7 @@ func TestApplyCredentialsPath(t *testing.T) {
 		path: "/tekton/creds",
 		want: v1beta1.TaskSpec{
 			Steps: []v1beta1.Step{{
-				Container: corev1.Container{
+				Container: v1beta1.Container{
 					Command: []string{"cp"},
 					Args:    []string{"-R", "/tekton/creds/", "$HOME"},
 				},

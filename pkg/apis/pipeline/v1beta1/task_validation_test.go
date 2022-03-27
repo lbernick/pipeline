@@ -46,12 +46,12 @@ var invalidResource = v1beta1.TaskResource{
 	},
 }
 
-var validSteps = []v1beta1.Step{{Container: corev1.Container{
+var validSteps = []v1beta1.Step{{Container: v1beta1.Container{
 	Name:  "mystep",
 	Image: "myimage",
 }}}
 
-var invalidSteps = []v1beta1.Step{{Container: corev1.Container{
+var invalidSteps = []v1beta1.Step{{Container: v1beta1.Container{
 	Name:  "replaceImage",
 	Image: "myimage",
 }}}
@@ -87,7 +87,7 @@ func TestTaskSpecValidate(t *testing.T) {
 		Params       []v1beta1.ParamSpec
 		Resources    *v1beta1.TaskResources
 		Steps        []v1beta1.Step
-		StepTemplate *corev1.Container
+		StepTemplate *v1beta1.Container
 		Workspaces   []v1beta1.WorkspaceDeclaration
 		Results      []v1beta1.TaskResult
 	}
@@ -97,9 +97,9 @@ func TestTaskSpecValidate(t *testing.T) {
 	}{{
 		name: "unnamed steps",
 		fields: fields{
-			Steps: []v1beta1.Step{{Container: corev1.Container{
+			Steps: []v1beta1.Step{{Container: v1beta1.Container{
 				Image: "myimage",
-			}}, {Container: corev1.Container{
+			}}, {Container: v1beta1.Container{
 				Image: "myotherimage",
 			}}},
 		},
@@ -148,7 +148,7 @@ func TestTaskSpecValidate(t *testing.T) {
 			}, {
 				Name: "foo-is-baz",
 			}},
-			Steps: []v1beta1.Step{{Container: corev1.Container{
+			Steps: []v1beta1.Step{{Container: v1beta1.Container{
 				Name:       "mystep",
 				Image:      "url",
 				Args:       []string{"--flag=$(params.baz) && $(params.foo-is-baz)"},
@@ -165,7 +165,7 @@ func TestTaskSpecValidate(t *testing.T) {
 				Name: "foo-is-baz",
 				Type: v1beta1.ParamTypeArray,
 			}},
-			Steps: []v1beta1.Step{{Container: corev1.Container{
+			Steps: []v1beta1.Step{{Container: v1beta1.Container{
 				Name:       "mystep",
 				Image:      "myimage",
 				Command:    []string{"$(params.foo-is-baz)"},
@@ -183,7 +183,7 @@ func TestTaskSpecValidate(t *testing.T) {
 				Name: "foo-is-baz",
 				Type: v1beta1.ParamTypeArray,
 			}},
-			Steps: []v1beta1.Step{{Container: corev1.Container{
+			Steps: []v1beta1.Step{{Container: v1beta1.Container{
 				Name:       "mystep",
 				Image:      "myimage",
 				Command:    []string{"$(params.foo-is-baz)"},
@@ -194,7 +194,7 @@ func TestTaskSpecValidate(t *testing.T) {
 	}, {
 		name: "valid path variable for legacy credential helper (aka creds-init)",
 		fields: fields{
-			Steps: []v1beta1.Step{{Container: corev1.Container{
+			Steps: []v1beta1.Step{{Container: v1beta1.Container{
 				Name:  "mystep",
 				Image: "echo",
 				Args:  []string{"$(credentials.path)"},
@@ -203,12 +203,12 @@ func TestTaskSpecValidate(t *testing.T) {
 	}, {
 		name: "step template included in validation",
 		fields: fields{
-			Steps: []v1beta1.Step{{Container: corev1.Container{
+			Steps: []v1beta1.Step{{Container: v1beta1.Container{
 				Name:    "astep",
 				Command: []string{"echo"},
 				Args:    []string{"hello"},
 			}}},
-			StepTemplate: &corev1.Container{
+			StepTemplate: &v1beta1.Container{
 				Image: "some-image",
 			},
 		},
@@ -216,7 +216,7 @@ func TestTaskSpecValidate(t *testing.T) {
 		name: "valid step with script",
 		fields: fields{
 			Steps: []v1beta1.Step{{
-				Container: corev1.Container{
+				Container: v1beta1.Container{
 					Image: "my-image",
 				},
 				Script: `
@@ -233,7 +233,7 @@ func TestTaskSpecValidate(t *testing.T) {
 				Name: "foo-is-baz",
 			}},
 			Steps: []v1beta1.Step{{
-				Container: corev1.Container{
+				Container: v1beta1.Container{
 					Image: "my-image",
 				},
 				Script: `
@@ -245,7 +245,7 @@ func TestTaskSpecValidate(t *testing.T) {
 		name: "valid step with script and args",
 		fields: fields{
 			Steps: []v1beta1.Step{{
-				Container: corev1.Container{
+				Container: v1beta1.Container{
 					Image: "my-image",
 					Args:  []string{"arg"},
 				},
@@ -257,7 +257,7 @@ func TestTaskSpecValidate(t *testing.T) {
 	}, {
 		name: "valid step with volumeMount under /tekton/home",
 		fields: fields{
-			Steps: []v1beta1.Step{{Container: corev1.Container{
+			Steps: []v1beta1.Step{{Container: v1beta1.Container{
 				Image: "myimage",
 				VolumeMounts: []corev1.VolumeMount{{
 					Name:      "foo",
@@ -269,7 +269,7 @@ func TestTaskSpecValidate(t *testing.T) {
 		name: "valid workspace",
 		fields: fields{
 			Steps: []v1beta1.Step{{
-				Container: corev1.Container{
+				Container: v1beta1.Container{
 					Image: "my-image",
 					Args:  []string{"arg"},
 				},
@@ -284,7 +284,7 @@ func TestTaskSpecValidate(t *testing.T) {
 		name: "valid result",
 		fields: fields{
 			Steps: []v1beta1.Step{{
-				Container: corev1.Container{
+				Container: v1beta1.Container{
 					Image: "my-image",
 					Args:  []string{"arg"},
 				},
@@ -298,7 +298,7 @@ func TestTaskSpecValidate(t *testing.T) {
 		name: "valid task name context",
 		fields: fields{
 			Steps: []v1beta1.Step{{
-				Container: corev1.Container{
+				Container: v1beta1.Container{
 					Image: "my-image",
 					Args:  []string{"arg"},
 				},
@@ -311,7 +311,7 @@ func TestTaskSpecValidate(t *testing.T) {
 		name: "valid task retry count context",
 		fields: fields{
 			Steps: []v1beta1.Step{{
-				Container: corev1.Container{
+				Container: v1beta1.Container{
 					Image: "my-image",
 					Args:  []string{"arg"},
 				},
@@ -324,7 +324,7 @@ func TestTaskSpecValidate(t *testing.T) {
 		name: "valid taskrun name context",
 		fields: fields{
 			Steps: []v1beta1.Step{{
-				Container: corev1.Container{
+				Container: v1beta1.Container{
 					Image: "my-image",
 					Args:  []string{"arg"},
 				},
@@ -337,7 +337,7 @@ func TestTaskSpecValidate(t *testing.T) {
 		name: "valid taskrun uid context",
 		fields: fields{
 			Steps: []v1beta1.Step{{
-				Container: corev1.Container{
+				Container: v1beta1.Container{
 					Image: "my-image",
 					Args:  []string{"arg"},
 				},
@@ -350,7 +350,7 @@ func TestTaskSpecValidate(t *testing.T) {
 		name: "valid context",
 		fields: fields{
 			Steps: []v1beta1.Step{{
-				Container: corev1.Container{
+				Container: v1beta1.Container{
 					Image: "my-image",
 					Args:  []string{"arg"},
 				},
@@ -385,7 +385,7 @@ func TestTaskSpecValidateError(t *testing.T) {
 		Resources    *v1beta1.TaskResources
 		Steps        []v1beta1.Step
 		Volumes      []corev1.Volume
-		StepTemplate *corev1.Container
+		StepTemplate *v1beta1.Container
 		Workspaces   []v1beta1.WorkspaceDeclaration
 		Results      []v1beta1.TaskResult
 	}
@@ -565,7 +565,7 @@ func TestTaskSpecValidateError(t *testing.T) {
 	}, {
 		name: "inexistent param variable",
 		fields: fields{
-			Steps: []v1beta1.Step{{Container: corev1.Container{
+			Steps: []v1beta1.Step{{Container: v1beta1.Container{
 				Name:  "mystep",
 				Image: "myimage",
 				Args:  []string{"--flag=$(params.inexistent)"},
@@ -585,7 +585,7 @@ func TestTaskSpecValidateError(t *testing.T) {
 				Name: "foo-is-baz",
 				Type: v1beta1.ParamTypeArray,
 			}},
-			Steps: []v1beta1.Step{{Container: corev1.Container{
+			Steps: []v1beta1.Step{{Container: v1beta1.Container{
 				Name:       "mystep",
 				Image:      "$(params.baz)",
 				Command:    []string{"$(params.foo-is-baz)"},
@@ -607,7 +607,7 @@ func TestTaskSpecValidateError(t *testing.T) {
 				Name: "foo-is-baz",
 				Type: v1beta1.ParamTypeArray,
 			}},
-			Steps: []v1beta1.Step{{Container: corev1.Container{
+			Steps: []v1beta1.Step{{Container: v1beta1.Container{
 				Name:       "mystep",
 				Image:      "$(params.baz[*])",
 				Command:    []string{"$(params.foo-is-baz)"},
@@ -632,7 +632,7 @@ func TestTaskSpecValidateError(t *testing.T) {
 			Steps: []v1beta1.Step{
 				{
 					Script: "$(params.baz[*])",
-					Container: corev1.Container{
+					Container: v1beta1.Container{
 						Name:       "mystep",
 						Image:      "my-image",
 						WorkingDir: "/foo/bar/src/",
@@ -653,7 +653,7 @@ func TestTaskSpecValidateError(t *testing.T) {
 				Name: "foo-is-baz",
 				Type: v1beta1.ParamTypeArray,
 			}},
-			Steps: []v1beta1.Step{{Container: corev1.Container{
+			Steps: []v1beta1.Step{{Container: v1beta1.Container{
 				Name:       "mystep",
 				Image:      "someimage",
 				Command:    []string{"$(params.foo-is-baz)"},
@@ -675,7 +675,7 @@ func TestTaskSpecValidateError(t *testing.T) {
 				Name: "foo-is-baz",
 				Type: v1beta1.ParamTypeArray,
 			}},
-			Steps: []v1beta1.Step{{Container: corev1.Container{
+			Steps: []v1beta1.Step{{Container: v1beta1.Container{
 				Name:       "mystep",
 				Image:      "someimage",
 				Command:    []string{"$(params.foo-is-baz)"},
@@ -697,7 +697,7 @@ func TestTaskSpecValidateError(t *testing.T) {
 				Name:    "foo-is-baz",
 				Default: v1beta1.NewArrayOrString("implied", "array", "type"),
 			}},
-			Steps: []v1beta1.Step{{Container: corev1.Container{
+			Steps: []v1beta1.Step{{Container: v1beta1.Container{
 				Name:       "mystep",
 				Image:      "someimage",
 				Command:    []string{"$(params.foo-is-baz)"},
@@ -719,7 +719,7 @@ func TestTaskSpecValidateError(t *testing.T) {
 				Name:    "foo-is-baz",
 				Default: v1beta1.NewArrayOrString("implied", "array", "type"),
 			}},
-			Steps: []v1beta1.Step{{Container: corev1.Container{
+			Steps: []v1beta1.Step{{Container: v1beta1.Container{
 				Name:       "mystep",
 				Image:      "someimage",
 				Command:    []string{"$(params.foo-is-baz)"},
@@ -741,7 +741,7 @@ func TestTaskSpecValidateError(t *testing.T) {
 					Default:     v1beta1.NewArrayOrString("default"),
 				},
 			},
-			Steps: []v1beta1.Step{{Container: corev1.Container{
+			Steps: []v1beta1.Step{{Container: v1beta1.Container{
 				Name:  "mystep",
 				Image: "myimage",
 				VolumeMounts: []corev1.VolumeMount{{
@@ -761,7 +761,7 @@ func TestTaskSpecValidateError(t *testing.T) {
 				Description: "param",
 				Default:     v1beta1.NewArrayOrString("default"),
 			}},
-			Steps: []v1beta1.Step{{Container: corev1.Container{
+			Steps: []v1beta1.Step{{Container: v1beta1.Container{
 				Name:  "mystep",
 				Image: "myimage",
 				Args:  []string{"$(params.foo) && $(params.inexistent)"},
@@ -789,7 +789,7 @@ func TestTaskSpecValidateError(t *testing.T) {
 		name: "step with script and command",
 		fields: fields{
 			Steps: []v1beta1.Step{{
-				Container: corev1.Container{
+				Container: v1beta1.Container{
 					Image:   "myimage",
 					Command: []string{"command"},
 				},
@@ -803,7 +803,7 @@ func TestTaskSpecValidateError(t *testing.T) {
 	}, {
 		name: "step volume mounts under /tekton/",
 		fields: fields{
-			Steps: []v1beta1.Step{{Container: corev1.Container{
+			Steps: []v1beta1.Step{{Container: v1beta1.Container{
 				Image: "myimage",
 				VolumeMounts: []corev1.VolumeMount{{
 					Name:      "foo",
@@ -818,7 +818,7 @@ func TestTaskSpecValidateError(t *testing.T) {
 	}, {
 		name: "step volume mount name starts with tekton-internal-",
 		fields: fields{
-			Steps: []v1beta1.Step{{Container: corev1.Container{
+			Steps: []v1beta1.Step{{Container: v1beta1.Container{
 				Image: "myimage",
 				VolumeMounts: []corev1.VolumeMount{{
 					Name:      "tekton-internal-foo",
@@ -866,7 +866,7 @@ func TestTaskSpecValidateError(t *testing.T) {
 		name: "workspace mount path already in volumeMounts",
 		fields: fields{
 			Steps: []v1beta1.Step{{
-				Container: corev1.Container{
+				Container: v1beta1.Container{
 					Image:   "myimage",
 					Command: []string{"command"},
 					VolumeMounts: []corev1.VolumeMount{{
@@ -888,7 +888,7 @@ func TestTaskSpecValidateError(t *testing.T) {
 		name: "workspace default mount path already in volumeMounts",
 		fields: fields{
 			Steps: []v1beta1.Step{{
-				Container: corev1.Container{
+				Container: v1beta1.Container{
 					Image:   "myimage",
 					Command: []string{"command"},
 					VolumeMounts: []corev1.VolumeMount{{
@@ -908,7 +908,7 @@ func TestTaskSpecValidateError(t *testing.T) {
 	}, {
 		name: "workspace mount path already in stepTemplate",
 		fields: fields{
-			StepTemplate: &corev1.Container{
+			StepTemplate: &v1beta1.Container{
 				VolumeMounts: []corev1.VolumeMount{{
 					Name:      "my-mount",
 					MountPath: "/foo",
@@ -927,7 +927,7 @@ func TestTaskSpecValidateError(t *testing.T) {
 	}, {
 		name: "workspace default mount path already in stepTemplate",
 		fields: fields{
-			StepTemplate: &corev1.Container{
+			StepTemplate: &v1beta1.Container{
 				VolumeMounts: []corev1.VolumeMount{{
 					Name:      "my-mount",
 					MountPath: "/workspace/some-workspace",
@@ -960,7 +960,7 @@ func TestTaskSpecValidateError(t *testing.T) {
 		name: "context not validate",
 		fields: fields{
 			Steps: []v1beta1.Step{{
-				Container: corev1.Container{
+				Container: v1beta1.Container{
 					Image: "my-image",
 					Args:  []string{"arg"},
 				},
@@ -1022,7 +1022,7 @@ func TestStepAndSidecarWorkspaces(t *testing.T) {
 		name: "valid step workspace usage",
 		fields: fields{
 			Steps: []v1beta1.Step{{
-				Container: corev1.Container{
+				Container: v1beta1.Container{
 					Image: "my-image",
 					Args:  []string{"arg"},
 				},
@@ -1073,7 +1073,7 @@ func TestStepAndSidecarWorkspacesErrors(t *testing.T) {
 		name: "step workspace that refers to non-existent workspace declaration fails",
 		fields: fields{
 			Steps: []v1beta1.Step{{
-				Container: corev1.Container{
+				Container: v1beta1.Container{
 					Image: "foo",
 				},
 				Workspaces: []v1beta1.WorkspaceUsage{{
@@ -1089,12 +1089,12 @@ func TestStepAndSidecarWorkspacesErrors(t *testing.T) {
 		name: "sidecar workspace that refers to non-existent workspace declaration fails",
 		fields: fields{
 			Steps: []v1beta1.Step{{
-				Container: corev1.Container{
+				Container: v1beta1.Container{
 					Image: "foo",
 				},
 			}},
 			Sidecars: []v1beta1.Sidecar{{
-				Container: corev1.Container{
+				Container: v1beta1.Container{
 					Image: "foo",
 				},
 				Workspaces: []v1beta1.WorkspaceUsage{{
@@ -1144,7 +1144,7 @@ func TestStepOnError(t *testing.T) {
 		name: "valid step - valid onError usage - set to continue - alpha API",
 		steps: []v1beta1.Step{{
 			OnError: "continue",
-			Container: corev1.Container{
+			Container: v1beta1.Container{
 				Image: "image",
 				Args:  []string{"arg"},
 			},
@@ -1153,7 +1153,7 @@ func TestStepOnError(t *testing.T) {
 		name: "valid step - valid onError usage - set to stopAndFail - alpha API",
 		steps: []v1beta1.Step{{
 			OnError: "stopAndFail",
-			Container: corev1.Container{
+			Container: v1beta1.Container{
 				Image: "image",
 				Args:  []string{"arg"},
 			},
@@ -1162,7 +1162,7 @@ func TestStepOnError(t *testing.T) {
 		name: "invalid step - onError set to invalid value - alpha API",
 		steps: []v1beta1.Step{{
 			OnError: "onError",
-			Container: corev1.Container{
+			Container: v1beta1.Container{
 				Image: "image",
 				Args:  []string{"arg"},
 			},
@@ -1206,7 +1206,7 @@ func TestIncompatibleAPIVersions(t *testing.T) {
 				Name: "foo",
 			}},
 			Steps: []v1beta1.Step{{
-				Container: corev1.Container{
+				Container: v1beta1.Container{
 					Image: "foo",
 				},
 				Workspaces: []v1beta1.WorkspaceUsage{{
@@ -1222,12 +1222,12 @@ func TestIncompatibleAPIVersions(t *testing.T) {
 				Name: "foo",
 			}},
 			Steps: []v1beta1.Step{{
-				Container: corev1.Container{
+				Container: v1beta1.Container{
 					Image: "foo",
 				},
 			}},
 			Sidecars: []v1beta1.Sidecar{{
-				Container: corev1.Container{
+				Container: v1beta1.Container{
 					Image: "foo",
 				},
 				Workspaces: []v1beta1.WorkspaceUsage{{
@@ -1240,7 +1240,7 @@ func TestIncompatibleAPIVersions(t *testing.T) {
 		requiredVersion: "alpha",
 		spec: v1beta1.TaskSpec{
 			Steps: []v1beta1.Step{{
-				Container: corev1.Container{
+				Container: v1beta1.Container{
 					Image: "my-image",
 				},
 				Script: `

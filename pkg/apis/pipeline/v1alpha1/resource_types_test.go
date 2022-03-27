@@ -24,13 +24,13 @@ import (
 )
 
 var (
-	prependStep = corev1.Container{
+	prependStep = v1alpha1.Container{
 		Name:    "prepend-step",
 		Image:   "dummy",
 		Command: []string{"doit"},
 		Args:    []string{"stuff", "things"},
 	}
-	appendStep = corev1.Container{
+	appendStep = v1alpha1.Container{
 		Name:    "append-step",
 		Image:   "dummy",
 		Command: []string{"doit"},

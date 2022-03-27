@@ -285,7 +285,7 @@ func TestClusterResource_GetInputTaskModifier(t *testing.T) {
 	ts := v1beta1.TaskSpec{}
 	wantSteps := []v1beta1.Step{
 		{
-			Container: corev1.Container{
+			Container: v1beta1.Container{
 				Name:    "kubeconfig-9l9zj",
 				Image:   "override-with-kubeconfig-writer:latest",
 				Command: []string{"/ko-app/kubeconfigwriter"},

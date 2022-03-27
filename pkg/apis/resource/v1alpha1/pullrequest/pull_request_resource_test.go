@@ -109,7 +109,7 @@ func containerTestCases(mode string) []testcase {
 			PRImage:               "override-with-pr:latest",
 			InsecureSkipTLSVerify: false,
 		},
-		out: []v1beta1.Step{{Container: corev1.Container{
+		out: []v1beta1.Step{{Container: v1beta1.Container{
 			Name:       "pr-source-nocreds-9l9zj",
 			Image:      "override-with-pr:latest",
 			WorkingDir: pipeline.WorkspaceDir,
@@ -130,7 +130,7 @@ func containerTestCases(mode string) []testcase {
 			PRImage:  "override-with-pr:latest",
 			Provider: "github",
 		},
-		out: []v1beta1.Step{{Container: corev1.Container{
+		out: []v1beta1.Step{{Container: v1beta1.Container{
 			Name:       "pr-source-creds-mz4c7",
 			Image:      "override-with-pr:latest",
 			WorkingDir: pipeline.WorkspaceDir,
@@ -157,7 +157,7 @@ func containerTestCases(mode string) []testcase {
 			PRImage:               "override-with-pr:latest",
 			InsecureSkipTLSVerify: true,
 		},
-		out: []v1beta1.Step{{Container: corev1.Container{
+		out: []v1beta1.Step{{Container: v1beta1.Container{
 			Name:       "pr-source-nocreds-mssqb",
 			Image:      "override-with-pr:latest",
 			WorkingDir: pipeline.WorkspaceDir,
@@ -172,7 +172,7 @@ func containerTestCases(mode string) []testcase {
 			PRImage:                   "override-with-pr:latest",
 			DisableStrictJSONComments: true,
 		},
-		out: []v1beta1.Step{{Container: corev1.Container{
+		out: []v1beta1.Step{{Container: v1beta1.Container{
 			Name:       "pr-source-strict-json-comments-78c5n",
 			Image:      "override-with-pr:latest",
 			WorkingDir: pipeline.WorkspaceDir,

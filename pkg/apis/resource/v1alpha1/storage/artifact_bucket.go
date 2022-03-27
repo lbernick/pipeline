@@ -57,11 +57,11 @@ func (b *ArtifactBucket) StorageBasePath(pr *v1beta1.PipelineRun) string {
 func (b *ArtifactBucket) GetCopyFromStorageToSteps(name, sourcePath, destinationPath string) []v1beta1.Step {
 	envVars, secretVolumeMount := getSecretEnvVarsAndVolumeMounts("bucket", secretVolumeMountPath, b.Secrets)
 
-	return []v1beta1.Step{{Container: corev1.Container{
+	return []v1beta1.Step{{Container: v1beta1.Container{
 		Name:    names.SimpleNameGenerator.RestrictLengthWithRandomSuffix(fmt.Sprintf("artifact-dest-mkdir-%s", name)),
 		Image:   b.ShellImage,
 		Command: []string{"mkdir", "-p", destinationPath},
-	}}, {Container: corev1.Container{
+	}}, {Container: v1beta1.Container{
 		Name:         names.SimpleNameGenerator.RestrictLengthWithRandomSuffix(fmt.Sprintf("artifact-copy-from-%s", name)),
 		Image:        b.GsutilImage,
 		Command:      []string{"gsutil"},
@@ -75,7 +75,7 @@ func (b *ArtifactBucket) GetCopyFromStorageToSteps(name, sourcePath, destination
 func (b *ArtifactBucket) GetCopyToStorageFromSteps(name, sourcePath, destinationPath string) []v1beta1.Step {
 	envVars, secretVolumeMount := getSecretEnvVarsAndVolumeMounts("bucket", secretVolumeMountPath, b.Secrets)
 
-	return []v1beta1.Step{{Container: corev1.Container{
+	return []v1beta1.Step{{Container: v1beta1.Container{
 		Name:         names.SimpleNameGenerator.RestrictLengthWithRandomSuffix(fmt.Sprintf("artifact-copy-to-%s", name)),
 		Image:        b.GsutilImage,
 		Command:      []string{"gsutil"},

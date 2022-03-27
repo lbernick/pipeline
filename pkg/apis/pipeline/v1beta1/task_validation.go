@@ -27,6 +27,7 @@ import (
 	"github.com/tektoncd/pipeline/pkg/apis/validate"
 	"github.com/tektoncd/pipeline/pkg/substitution"
 	corev1 "k8s.io/api/core/v1"
+	"k8s.io/apimachinery/pkg/api/resource"
 	"k8s.io/apimachinery/pkg/util/sets"
 	"k8s.io/apimachinery/pkg/util/validation"
 	"knative.dev/pkg/apis"
@@ -87,7 +88,7 @@ func (tr TaskResult) Validate(_ context.Context) *apis.FieldError {
 
 // a mount path which conflicts with any other declared workspaces, with the explicitly
 // declared volume mounts, or with the stepTemplate. The names must also be unique.
-func validateDeclaredWorkspaces(workspaces []WorkspaceDeclaration, steps []Step, stepTemplate *corev1.Container) (errs *apis.FieldError) {
+func validateDeclaredWorkspaces(workspaces []WorkspaceDeclaration, steps []Step, stepTemplate *Container) (errs *apis.FieldError) {
 	mountPaths := sets.NewString()
 	for _, step := range steps {
 		for _, vm := range step.VolumeMounts {
@@ -239,6 +240,23 @@ func validateStep(ctx context.Context, s Step, names sets.String) (errs *apis.Fi
 		cleaned := strings.TrimSpace(s.Script)
 		if strings.HasPrefix(cleaned, "#!win") {
 			errs = errs.Also(ValidateEnabledAPIFields(ctx, "windows script support", config.AlphaAPIFields).ViaField("script"))
+		}
+	}
+
+	if s.Resources.Requests != nil {
+		for _, v := range s.Resources.Requests {
+			_, err := resource.ParseQuantity(v)
+			if err != nil {
+				errs = errs.Also(apis.ErrInvalidValue(s.Resources.Requests, fmt.Sprintf("invalid resource quantity %s", v)))
+			}
+		}
+	}
+	if s.Resources.Limits != nil {
+		for _, v := range s.Resources.Limits {
+			_, err := resource.ParseQuantity(v)
+			if err != nil {
+				errs = errs.Also(apis.ErrInvalidValue(s.Resources.Limits, fmt.Sprintf("invalid resource quantity %s", v)))
+			}
 		}
 	}
 	return errs

@@ -113,7 +113,7 @@ func TestPodBuild(t *testing.T) {
 	}{{
 		desc: "simple",
 		ts: v1beta1.TaskSpec{
-			Steps: []v1beta1.Step{{Container: corev1.Container{
+			Steps: []v1beta1.Step{{Container: v1beta1.Container{
 				Name:    "name",
 				Image:   "image",
 				Command: []string{"cmd"}, // avoid entrypoint lookup.
@@ -121,7 +121,7 @@ func TestPodBuild(t *testing.T) {
 		},
 		want: &corev1.PodSpec{
 			RestartPolicy:  corev1.RestartPolicyNever,
-			InitContainers: []corev1.Container{placeToolsInit, tektonDirInit(images.EntrypointImage, []v1beta1.Step{{Container: corev1.Container{Name: "name"}}})},
+			InitContainers: []corev1.Container{placeToolsInit, tektonDirInit(images.EntrypointImage, []v1beta1.Step{{Container: v1beta1.Container{Name: "name"}}})},
 			Containers: []corev1.Container{{
 				Name:    "step-name",
 				Image:   "image",
@@ -160,7 +160,7 @@ func TestPodBuild(t *testing.T) {
 			},
 		},
 		ts: v1beta1.TaskSpec{
-			Steps: []v1beta1.Step{{Container: corev1.Container{
+			Steps: []v1beta1.Step{{Container: v1beta1.Container{
 				Name:    "name",
 				Image:   "image",
 				Command: []string{"cmd"}, // avoid entrypoint lookup.
@@ -168,7 +168,7 @@ func TestPodBuild(t *testing.T) {
 		},
 		want: &corev1.PodSpec{
 			RestartPolicy:  corev1.RestartPolicyNever,
-			InitContainers: []corev1.Container{placeToolsInit, tektonDirInit(images.EntrypointImage, []v1beta1.Step{{Container: corev1.Container{Name: "name"}}})},
+			InitContainers: []corev1.Container{placeToolsInit, tektonDirInit(images.EntrypointImage, []v1beta1.Step{{Container: v1beta1.Container{Name: "name"}}})},
 			Containers: []corev1.Container{{
 				Name:    "step-name",
 				Image:   "image",
@@ -202,7 +202,7 @@ func TestPodBuild(t *testing.T) {
 	}, {
 		desc: "simple with running-in-environment-with-injected-sidecar set to false",
 		ts: v1beta1.TaskSpec{
-			Steps: []v1beta1.Step{{Container: corev1.Container{
+			Steps: []v1beta1.Step{{Container: v1beta1.Container{
 				Name:    "name",
 				Image:   "image",
 				Command: []string{"cmd"}, // avoid entrypoint lookup.
@@ -213,7 +213,7 @@ func TestPodBuild(t *testing.T) {
 		},
 		want: &corev1.PodSpec{
 			RestartPolicy:  corev1.RestartPolicyNever,
-			InitContainers: []corev1.Container{placeToolsInit, tektonDirInit(images.EntrypointImage, []v1beta1.Step{{Container: corev1.Container{Name: "name"}}})},
+			InitContainers: []corev1.Container{placeToolsInit, tektonDirInit(images.EntrypointImage, []v1beta1.Step{{Container: v1beta1.Container{Name: "name"}}})},
 			Containers: []corev1.Container{{
 				Name:    "step-name",
 				Image:   "image",
@@ -250,7 +250,7 @@ func TestPodBuild(t *testing.T) {
 	}, {
 		desc: "with service account",
 		ts: v1beta1.TaskSpec{
-			Steps: []v1beta1.Step{{Container: corev1.Container{
+			Steps: []v1beta1.Step{{Container: v1beta1.Container{
 				Name:    "name",
 				Image:   "image",
 				Command: []string{"cmd"}, // avoid entrypoint lookup.
@@ -262,7 +262,7 @@ func TestPodBuild(t *testing.T) {
 		want: &corev1.PodSpec{
 			ServiceAccountName: "service-account",
 			RestartPolicy:      corev1.RestartPolicyNever,
-			InitContainers:     []corev1.Container{placeToolsInit, tektonDirInit(images.EntrypointImage, []v1beta1.Step{{Container: corev1.Container{Name: "name"}}})},
+			InitContainers:     []corev1.Container{placeToolsInit, tektonDirInit(images.EntrypointImage, []v1beta1.Step{{Container: v1beta1.Container{Name: "name"}}})},
 			Containers: []corev1.Container{{
 				Name:    "step-name",
 				Image:   "image",
@@ -303,7 +303,7 @@ func TestPodBuild(t *testing.T) {
 	}, {
 		desc: "with-pod-template",
 		ts: v1beta1.TaskSpec{
-			Steps: []v1beta1.Step{{Container: corev1.Container{
+			Steps: []v1beta1.Step{{Container: v1beta1.Container{
 				Name:    "name",
 				Image:   "image",
 				Command: []string{"cmd"}, // avoid entrypoint lookup.
@@ -329,7 +329,7 @@ func TestPodBuild(t *testing.T) {
 		},
 		want: &corev1.PodSpec{
 			RestartPolicy:  corev1.RestartPolicyNever,
-			InitContainers: []corev1.Container{placeToolsInit, tektonDirInit(images.EntrypointImage, []v1beta1.Step{{Container: corev1.Container{Name: "name"}}})},
+			InitContainers: []corev1.Container{placeToolsInit, tektonDirInit(images.EntrypointImage, []v1beta1.Step{{Container: v1beta1.Container{Name: "name"}}})},
 			Containers: []corev1.Container{{
 				Name:    "step-name",
 				Image:   "image",
@@ -378,7 +378,7 @@ func TestPodBuild(t *testing.T) {
 	}, {
 		desc: "very long step name",
 		ts: v1beta1.TaskSpec{
-			Steps: []v1beta1.Step{{Container: corev1.Container{
+			Steps: []v1beta1.Step{{Container: v1beta1.Container{
 				Name:    "a-very-very-long-character-step-name-to-trigger-max-len----and-invalid-characters",
 				Image:   "image",
 				Command: []string{"cmd"}, // avoid entrypoint lookup.
@@ -386,7 +386,7 @@ func TestPodBuild(t *testing.T) {
 		},
 		want: &corev1.PodSpec{
 			RestartPolicy:  corev1.RestartPolicyNever,
-			InitContainers: []corev1.Container{placeToolsInit, tektonDirInit(images.EntrypointImage, []v1beta1.Step{{Container: corev1.Container{Name: "a-very-very-long-character-step-name-to-trigger-max-len----and-invalid-characters"}}})},
+			InitContainers: []corev1.Container{placeToolsInit, tektonDirInit(images.EntrypointImage, []v1beta1.Step{{Container: v1beta1.Container{Name: "a-very-very-long-character-step-name-to-trigger-max-len----and-invalid-characters"}}})},
 			Containers: []corev1.Container{{
 				Name:    "step-a-very-very-long-character-step-name-to-trigger-max-len", // step name trimmed.
 				Image:   "image",
@@ -420,7 +420,7 @@ func TestPodBuild(t *testing.T) {
 	}, {
 		desc: "step name ends with non alphanumeric",
 		ts: v1beta1.TaskSpec{
-			Steps: []v1beta1.Step{{Container: corev1.Container{
+			Steps: []v1beta1.Step{{Container: v1beta1.Container{
 				Name:    "ends-with-invalid-%%__$$",
 				Image:   "image",
 				Command: []string{"cmd"}, // avoid entrypoint lookup.
@@ -428,7 +428,7 @@ func TestPodBuild(t *testing.T) {
 		},
 		want: &corev1.PodSpec{
 			RestartPolicy:  corev1.RestartPolicyNever,
-			InitContainers: []corev1.Container{placeToolsInit, tektonDirInit(images.EntrypointImage, []v1beta1.Step{{Container: corev1.Container{Name: "ends-with-invalid-%%__$$"}}})},
+			InitContainers: []corev1.Container{placeToolsInit, tektonDirInit(images.EntrypointImage, []v1beta1.Step{{Container: v1beta1.Container{Name: "ends-with-invalid-%%__$$"}}})},
 			Containers: []corev1.Container{{
 				Name:    "step-ends-with-invalid", // invalid suffix removed.
 				Image:   "image",
@@ -462,7 +462,7 @@ func TestPodBuild(t *testing.T) {
 	}, {
 		desc: "workingDir in workspace",
 		ts: v1beta1.TaskSpec{
-			Steps: []v1beta1.Step{{Container: corev1.Container{
+			Steps: []v1beta1.Step{{Container: v1beta1.Container{
 				Name:       "name",
 				Image:      "image",
 				Command:    []string{"cmd"}, // avoid entrypoint lookup.
@@ -473,7 +473,7 @@ func TestPodBuild(t *testing.T) {
 			RestartPolicy: corev1.RestartPolicyNever,
 			InitContainers: []corev1.Container{
 				placeToolsInit,
-				tektonDirInit(images.EntrypointImage, []v1beta1.Step{{Container: corev1.Container{Name: "name"}}}),
+				tektonDirInit(images.EntrypointImage, []v1beta1.Step{{Container: v1beta1.Container{Name: "name"}}}),
 				{
 					Name:         "working-dir-initializer",
 					Image:        images.WorkingDirInitImage,
@@ -517,13 +517,13 @@ func TestPodBuild(t *testing.T) {
 	}, {
 		desc: "sidecar container",
 		ts: v1beta1.TaskSpec{
-			Steps: []v1beta1.Step{{Container: corev1.Container{
+			Steps: []v1beta1.Step{{Container: v1beta1.Container{
 				Name:    "primary-name",
 				Image:   "primary-image",
 				Command: []string{"cmd"}, // avoid entrypoint lookup.
 			}}},
 			Sidecars: []v1beta1.Sidecar{{
-				Container: corev1.Container{
+				Container: v1beta1.Container{
 					Name:  "sc-name",
 					Image: "sidecar-image",
 				},
@@ -532,7 +532,7 @@ func TestPodBuild(t *testing.T) {
 		wantAnnotations: map[string]string{},
 		want: &corev1.PodSpec{
 			RestartPolicy:  corev1.RestartPolicyNever,
-			InitContainers: []corev1.Container{placeToolsInit, tektonDirInit(images.EntrypointImage, []v1beta1.Step{{Container: corev1.Container{Name: "primary-name"}}})},
+			InitContainers: []corev1.Container{placeToolsInit, tektonDirInit(images.EntrypointImage, []v1beta1.Step{{Container: v1beta1.Container{Name: "primary-name"}}})},
 			Containers: []corev1.Container{{
 				Name:    "step-primary-name",
 				Image:   "primary-image",
@@ -572,13 +572,13 @@ func TestPodBuild(t *testing.T) {
 	}, {
 		desc: "sidecar container with script",
 		ts: v1beta1.TaskSpec{
-			Steps: []v1beta1.Step{{Container: corev1.Container{
+			Steps: []v1beta1.Step{{Container: v1beta1.Container{
 				Name:    "primary-name",
 				Image:   "primary-image",
 				Command: []string{"cmd"}, // avoid entrypoint lookup.
 			}}},
 			Sidecars: []v1beta1.Sidecar{{
-				Container: corev1.Container{
+				Container: v1beta1.Container{
 					Name:  "sc-name",
 					Image: "sidecar-image",
 				},
@@ -590,7 +590,7 @@ func TestPodBuild(t *testing.T) {
 			RestartPolicy: corev1.RestartPolicyNever,
 			InitContainers: []corev1.Container{
 				placeToolsInit,
-				tektonDirInit(images.EntrypointImage, []v1beta1.Step{{Container: corev1.Container{Name: "primary-name"}}}),
+				tektonDirInit(images.EntrypointImage, []v1beta1.Step{{Container: v1beta1.Container{Name: "primary-name"}}}),
 				{
 					Name:         "place-scripts",
 					Image:        "busybox",
@@ -643,13 +643,13 @@ _EOF_
 	}, {
 		desc: "sidecar container with enable-ready-annotation-on-pod-create",
 		ts: v1beta1.TaskSpec{
-			Steps: []v1beta1.Step{{Container: corev1.Container{
+			Steps: []v1beta1.Step{{Container: v1beta1.Container{
 				Name:    "primary-name",
 				Image:   "primary-image",
 				Command: []string{"cmd"}, // avoid entrypoint lookup.
 			}}},
 			Sidecars: []v1beta1.Sidecar{{
-				Container: corev1.Container{
+				Container: v1beta1.Container{
 					Name:  "sc-name",
 					Image: "sidecar-image",
 				},
@@ -661,7 +661,7 @@ _EOF_
 		wantAnnotations: map[string]string{}, // no ready annotations on pod create since sidecars are present
 		want: &corev1.PodSpec{
 			RestartPolicy:  corev1.RestartPolicyNever,
-			InitContainers: []corev1.Container{placeToolsInit, tektonDirInit(images.EntrypointImage, []v1beta1.Step{{Container: corev1.Container{Name: "primary-name"}}})},
+			InitContainers: []corev1.Container{placeToolsInit, tektonDirInit(images.EntrypointImage, []v1beta1.Step{{Container: v1beta1.Container{Name: "primary-name"}}})},
 			Containers: []corev1.Container{{
 				Name:    "step-primary-name",
 				Image:   "primary-image",
@@ -698,22 +698,22 @@ _EOF_
 	}, {
 		desc: "resource request",
 		ts: v1beta1.TaskSpec{
-			Steps: []v1beta1.Step{{Container: corev1.Container{
+			Steps: []v1beta1.Step{{Container: v1beta1.Container{
 				Image:   "image",
 				Command: []string{"cmd"}, // avoid entrypoint lookup.
-				Resources: corev1.ResourceRequirements{
-					Requests: corev1.ResourceList{
-						corev1.ResourceCPU:    resource.MustParse("8"),
-						corev1.ResourceMemory: resource.MustParse("10Gi"),
+				Resources: v1beta1.ResourceRequirements{
+					Requests: v1beta1.ResourceList{
+						corev1.ResourceCPU:    "8",
+						corev1.ResourceMemory: "10Gi",
 					},
 				},
-			}}, {Container: corev1.Container{
+			}}, {Container: v1beta1.Container{
 				Image:   "image",
 				Command: []string{"cmd"}, // avoid entrypoint lookup.
-				Resources: corev1.ResourceRequirements{
-					Requests: corev1.ResourceList{
-						corev1.ResourceCPU:    resource.MustParse("1"),
-						corev1.ResourceMemory: resource.MustParse("100Gi"),
+				Resources: v1beta1.ResourceRequirements{
+					Requests: v1beta1.ResourceList{
+						corev1.ResourceCPU:    "1",
+						corev1.ResourceMemory: "100Gi",
 					},
 				},
 			}}},
@@ -721,8 +721,8 @@ _EOF_
 		want: &corev1.PodSpec{
 			RestartPolicy: corev1.RestartPolicyNever,
 			InitContainers: []corev1.Container{placeToolsInit, tektonDirInit(images.EntrypointImage, []v1beta1.Step{
-				{Container: corev1.Container{Name: "unnamed-0"}},
-				{Container: corev1.Container{Name: "unnamed-1"}},
+				{Container: v1beta1.Container{Name: "unnamed-0"}},
+				{Container: v1beta1.Container{Name: "unnamed-1"}},
 			})},
 			Containers: []corev1.Container{{
 				Name:    "step-unnamed-0",
@@ -794,14 +794,14 @@ _EOF_
 	}, {
 		desc: "with stepOverrides",
 		ts: v1beta1.TaskSpec{
-			Steps: []v1beta1.Step{{Container: corev1.Container{
+			Steps: []v1beta1.Step{{Container: v1beta1.Container{
 				Name:    "step1",
 				Image:   "image",
 				Command: []string{"cmd"},
-				Resources: corev1.ResourceRequirements{
-					Requests: corev1.ResourceList{
-						corev1.ResourceCPU:    resource.MustParse("8"),
-						corev1.ResourceMemory: resource.MustParse("10Gi"),
+				Resources: v1beta1.ResourceRequirements{
+					Requests: v1beta1.ResourceList{
+						corev1.ResourceCPU:    "8",
+						corev1.ResourceMemory: "10Gi",
 					},
 				},
 			}}},
@@ -809,10 +809,10 @@ _EOF_
 		trs: v1beta1.TaskRunSpec{
 			StepOverrides: []v1beta1.TaskRunStepOverride{{
 				Name: "step1",
-				Resources: corev1.ResourceRequirements{
-					Requests: corev1.ResourceList{
-						corev1.ResourceCPU:    resource.MustParse("6"),
-						corev1.ResourceMemory: resource.MustParse("5Gi"),
+				Resources: v1beta1.ResourceRequirements{
+					Requests: v1beta1.ResourceList{
+						corev1.ResourceCPU:    "6",
+						corev1.ResourceMemory: "5Gi",
 					},
 				},
 			}},
@@ -820,7 +820,7 @@ _EOF_
 		want: &corev1.PodSpec{
 			RestartPolicy: corev1.RestartPolicyNever,
 			InitContainers: []corev1.Container{placeToolsInit, tektonDirInit(images.EntrypointImage, []v1beta1.Step{
-				{Container: corev1.Container{Name: "step1"}},
+				{Container: v1beta1.Container{Name: "step1"}},
 			})},
 			Containers: []corev1.Container{{
 				Name:    "step-step1",
@@ -861,15 +861,15 @@ _EOF_
 	}, {
 		desc: "with stepOverrides and stepTemplate",
 		ts: v1beta1.TaskSpec{
-			StepTemplate: &corev1.Container{
-				Resources: corev1.ResourceRequirements{
-					Requests: corev1.ResourceList{
-						corev1.ResourceCPU:    resource.MustParse("8"),
-						corev1.ResourceMemory: resource.MustParse("10Gi"),
+			StepTemplate: &v1beta1.Container{
+				Resources: v1beta1.ResourceRequirements{
+					Requests: v1beta1.ResourceList{
+						corev1.ResourceCPU:    "8",
+						corev1.ResourceMemory: "10Gi",
 					},
 				},
 			},
-			Steps: []v1beta1.Step{{Container: corev1.Container{
+			Steps: []v1beta1.Step{{Container: v1beta1.Container{
 				Name:    "step1",
 				Image:   "image",
 				Command: []string{"cmd"},
@@ -878,10 +878,10 @@ _EOF_
 		trs: v1beta1.TaskRunSpec{
 			StepOverrides: []v1beta1.TaskRunStepOverride{{
 				Name: "step1",
-				Resources: corev1.ResourceRequirements{
-					Requests: corev1.ResourceList{
-						corev1.ResourceCPU:    resource.MustParse("6"),
-						corev1.ResourceMemory: resource.MustParse("5Gi"),
+				Resources: v1beta1.ResourceRequirements{
+					Requests: v1beta1.ResourceList{
+						corev1.ResourceCPU:    "6",
+						corev1.ResourceMemory: "5Gi",
 					},
 				},
 			}},
@@ -889,7 +889,7 @@ _EOF_
 		want: &corev1.PodSpec{
 			RestartPolicy: corev1.RestartPolicyNever,
 			InitContainers: []corev1.Container{placeToolsInit, tektonDirInit(images.EntrypointImage, []v1beta1.Step{
-				{Container: corev1.Container{Name: "step1"}},
+				{Container: v1beta1.Container{Name: "step1"}},
 			})},
 			Containers: []corev1.Container{{
 				Name:    "step-step1",
@@ -930,19 +930,19 @@ _EOF_
 	}, {
 		desc: "with sidecarOverrides",
 		ts: v1beta1.TaskSpec{
-			Steps: []v1beta1.Step{{Container: corev1.Container{
+			Steps: []v1beta1.Step{{Container: v1beta1.Container{
 				Name:    "primary-name",
 				Image:   "primary-image",
 				Command: []string{"cmd"}, // avoid entrypoint lookup.
 			}}},
 			Sidecars: []v1beta1.Sidecar{{
-				Container: corev1.Container{
+				Container: v1beta1.Container{
 					Name:  "sc-name",
 					Image: "sidecar-image",
-					Resources: corev1.ResourceRequirements{
-						Requests: corev1.ResourceList{
-							corev1.ResourceCPU:    resource.MustParse("8"),
-							corev1.ResourceMemory: resource.MustParse("10Gi"),
+					Resources: v1beta1.ResourceRequirements{
+						Requests: v1beta1.ResourceList{
+							corev1.ResourceCPU:    "8",
+							corev1.ResourceMemory: "10Gi",
 						},
 					},
 				},
@@ -951,10 +951,10 @@ _EOF_
 		trs: v1beta1.TaskRunSpec{
 			SidecarOverrides: []v1beta1.TaskRunSidecarOverride{{
 				Name: "sc-name",
-				Resources: corev1.ResourceRequirements{
-					Requests: corev1.ResourceList{
-						corev1.ResourceCPU:    resource.MustParse("6"),
-						corev1.ResourceMemory: resource.MustParse("5Gi"),
+				Resources: v1beta1.ResourceRequirements{
+					Requests: v1beta1.ResourceList{
+						corev1.ResourceCPU:    "6",
+						corev1.ResourceMemory: "5Gi",
 					},
 				},
 			}},
@@ -962,7 +962,7 @@ _EOF_
 		wantAnnotations: map[string]string{},
 		want: &corev1.PodSpec{
 			RestartPolicy:  corev1.RestartPolicyNever,
-			InitContainers: []corev1.Container{placeToolsInit, tektonDirInit(images.EntrypointImage, []v1beta1.Step{{Container: corev1.Container{Name: "primary-name"}}})},
+			InitContainers: []corev1.Container{placeToolsInit, tektonDirInit(images.EntrypointImage, []v1beta1.Step{{Container: v1beta1.Container{Name: "primary-name"}}})},
 			Containers: []corev1.Container{{
 				Name:    "step-primary-name",
 				Image:   "primary-image",
@@ -1005,18 +1005,18 @@ _EOF_
 	}, {
 		desc: "step with script and stepTemplate",
 		ts: v1beta1.TaskSpec{
-			StepTemplate: &corev1.Container{
+			StepTemplate: &v1beta1.Container{
 				Env:  []corev1.EnvVar{{Name: "FOO", Value: "bar"}},
 				Args: []string{"template", "args"},
 			},
 			Steps: []v1beta1.Step{{
-				Container: corev1.Container{
+				Container: v1beta1.Container{
 					Name:  "one",
 					Image: "image",
 				},
 				Script: "#!/bin/sh\necho hello from step one",
 			}, {
-				Container: corev1.Container{
+				Container: v1beta1.Container{
 					Name:         "two",
 					Image:        "image",
 					VolumeMounts: []corev1.VolumeMount{{Name: "i-have-a-volume-mount"}},
@@ -1024,7 +1024,7 @@ _EOF_
 				Script: `#!/usr/bin/env python
 print("Hello from Python")`,
 			}, {
-				Container: corev1.Container{
+				Container: v1beta1.Container{
 					Name:    "regular-step",
 					Image:   "image",
 					Command: []string{"regular", "command"},
@@ -1036,9 +1036,9 @@ print("Hello from Python")`,
 			InitContainers: []corev1.Container{
 				placeToolsInit,
 				tektonDirInit(images.EntrypointImage, []v1beta1.Step{
-					{Container: corev1.Container{Name: "one"}},
-					{Container: corev1.Container{Name: "two"}},
-					{Container: corev1.Container{Name: "regular-step"}},
+					{Container: v1beta1.Container{Name: "one"}},
+					{Container: v1beta1.Container{Name: "two"}},
+					{Container: v1beta1.Container{Name: "regular-step"}},
 				}),
 				{
 					Name:    "place-scripts",
@@ -1154,7 +1154,7 @@ _EOF_
 		desc: "step with script that uses two dollar signs",
 		ts: v1beta1.TaskSpec{
 			Steps: []v1beta1.Step{{
-				Container: corev1.Container{
+				Container: v1beta1.Container{
 					Name:  "one",
 					Image: "image",
 				},
@@ -1164,7 +1164,7 @@ _EOF_
 		want: &corev1.PodSpec{
 			RestartPolicy: corev1.RestartPolicyNever,
 			InitContainers: []corev1.Container{placeToolsInit,
-				tektonDirInit(images.EntrypointImage, []v1beta1.Step{{Container: corev1.Container{Name: "one"}}}),
+				tektonDirInit(images.EntrypointImage, []v1beta1.Step{{Container: v1beta1.Container{Name: "one"}}}),
 				{
 					Name:    "place-scripts",
 					Image:   images.ShellImage,
@@ -1214,7 +1214,7 @@ _EOF_
 		ts: v1beta1.TaskSpec{
 			Steps: []v1beta1.Step{
 				{
-					Container: corev1.Container{
+					Container: v1beta1.Container{
 						Name:    "schedule-me",
 						Image:   "image",
 						Command: []string{"cmd"}, // avoid entrypoint lookup.
@@ -1229,7 +1229,7 @@ _EOF_
 		},
 		want: &corev1.PodSpec{
 			RestartPolicy:  corev1.RestartPolicyNever,
-			InitContainers: []corev1.Container{placeToolsInit, tektonDirInit(images.EntrypointImage, []v1beta1.Step{{Container: corev1.Container{Name: "schedule-me"}}})},
+			InitContainers: []corev1.Container{placeToolsInit, tektonDirInit(images.EntrypointImage, []v1beta1.Step{{Container: v1beta1.Container{Name: "schedule-me"}}})},
 			SchedulerName:  "there-scheduler",
 			Volumes: append(implicitVolumes, binVolume, runVolume(0), downwardVolume, corev1.Volume{
 				Name:         "tekton-creds-init-home-0",
@@ -1267,7 +1267,7 @@ _EOF_
 		ts: v1beta1.TaskSpec{
 			Steps: []v1beta1.Step{
 				{
-					Container: corev1.Container{
+					Container: v1beta1.Container{
 						Name:    "image-pull",
 						Image:   "image",
 						Command: []string{"cmd"}, // avoid entrypoint lookup.
@@ -1282,7 +1282,7 @@ _EOF_
 		},
 		want: &corev1.PodSpec{
 			RestartPolicy:  corev1.RestartPolicyNever,
-			InitContainers: []corev1.Container{placeToolsInit, tektonDirInit(images.EntrypointImage, []v1beta1.Step{{Container: corev1.Container{Name: "image-pull"}}})},
+			InitContainers: []corev1.Container{placeToolsInit, tektonDirInit(images.EntrypointImage, []v1beta1.Step{{Container: v1beta1.Container{Name: "image-pull"}}})},
 			Volumes: append(implicitVolumes, binVolume, runVolume(0), downwardVolume, corev1.Volume{
 				Name:         "tekton-creds-init-home-0",
 				VolumeSource: corev1.VolumeSource{EmptyDir: &corev1.EmptyDirVolumeSource{Medium: corev1.StorageMediumMemory}},
@@ -1320,7 +1320,7 @@ _EOF_
 
 				Steps: []v1beta1.Step{
 					{
-						Container: corev1.Container{
+						Container: v1beta1.Container{
 							Name:    "host-aliases",
 							Image:   "image",
 							Command: []string{"cmd"}, // avoid entrypoint lookup.
@@ -1335,7 +1335,7 @@ _EOF_
 			},
 			want: &corev1.PodSpec{
 				RestartPolicy:  corev1.RestartPolicyNever,
-				InitContainers: []corev1.Container{placeToolsInit, tektonDirInit(images.EntrypointImage, []v1beta1.Step{{Container: corev1.Container{Name: "host-aliases"}}})},
+				InitContainers: []corev1.Container{placeToolsInit, tektonDirInit(images.EntrypointImage, []v1beta1.Step{{Container: v1beta1.Container{Name: "host-aliases"}}})},
 				Volumes: append(implicitVolumes, binVolume, runVolume(0), downwardVolume, corev1.Volume{
 					Name:         "tekton-creds-init-home-0",
 					VolumeSource: corev1.VolumeSource{EmptyDir: &corev1.EmptyDirVolumeSource{Medium: corev1.StorageMediumMemory}},
@@ -1371,7 +1371,7 @@ _EOF_
 			ts: v1beta1.TaskSpec{
 				Steps: []v1beta1.Step{
 					{
-						Container: corev1.Container{
+						Container: v1beta1.Container{
 							Name:    "use-my-hostNetwork",
 							Image:   "image",
 							Command: []string{"cmd"}, // avoid entrypoint lookup.
@@ -1386,7 +1386,7 @@ _EOF_
 			},
 			want: &corev1.PodSpec{
 				RestartPolicy:  corev1.RestartPolicyNever,
-				InitContainers: []corev1.Container{placeToolsInit, tektonDirInit(images.EntrypointImage, []v1beta1.Step{{Container: corev1.Container{Name: "use-my-hostNetwork"}}})},
+				InitContainers: []corev1.Container{placeToolsInit, tektonDirInit(images.EntrypointImage, []v1beta1.Step{{Container: v1beta1.Container{Name: "use-my-hostNetwork"}}})},
 				HostNetwork:    true,
 				Volumes: append(implicitVolumes, binVolume, runVolume(0), downwardVolume, corev1.Volume{
 					Name:         "tekton-creds-init-home-0",
@@ -1421,7 +1421,7 @@ _EOF_
 		}, {
 			desc: "step-with-timeout",
 			ts: v1beta1.TaskSpec{
-				Steps: []v1beta1.Step{{Container: corev1.Container{
+				Steps: []v1beta1.Step{{Container: v1beta1.Container{
 					Name:    "name",
 					Image:   "image",
 					Command: []string{"cmd"}, // avoid entrypoint lookup.
@@ -1431,7 +1431,7 @@ _EOF_
 			},
 			want: &corev1.PodSpec{
 				RestartPolicy:  corev1.RestartPolicyNever,
-				InitContainers: []corev1.Container{placeToolsInit, tektonDirInit(images.EntrypointImage, []v1beta1.Step{{Container: corev1.Container{Name: "name"}}})},
+				InitContainers: []corev1.Container{placeToolsInit, tektonDirInit(images.EntrypointImage, []v1beta1.Step{{Container: v1beta1.Container{Name: "name"}}})},
 				Containers: []corev1.Container{{
 					Name:    "step-name",
 					Image:   "image",
@@ -1467,7 +1467,7 @@ _EOF_
 		}, {
 			desc: "step-with-no-timeout-equivalent-to-0-second-timeout",
 			ts: v1beta1.TaskSpec{
-				Steps: []v1beta1.Step{{Container: corev1.Container{
+				Steps: []v1beta1.Step{{Container: v1beta1.Container{
 					Name:    "name",
 					Image:   "image",
 					Command: []string{"cmd"}, // avoid entrypoint lookup.
@@ -1480,7 +1480,7 @@ _EOF_
 			},
 			want: &corev1.PodSpec{
 				RestartPolicy:  corev1.RestartPolicyNever,
-				InitContainers: []corev1.Container{placeToolsInit, tektonDirInit(images.EntrypointImage, []v1beta1.Step{{Container: corev1.Container{Name: "name"}}})},
+				InitContainers: []corev1.Container{placeToolsInit, tektonDirInit(images.EntrypointImage, []v1beta1.Step{{Container: v1beta1.Container{Name: "name"}}})},
 				Containers: []corev1.Container{{
 					Name:    "step-name",
 					Image:   "image",
@@ -1519,7 +1519,7 @@ _EOF_
 				"disable-creds-init": "true",
 			},
 			ts: v1beta1.TaskSpec{
-				Steps: []v1beta1.Step{{Container: corev1.Container{
+				Steps: []v1beta1.Step{{Container: v1beta1.Container{
 					Name:    "name",
 					Image:   "image",
 					Command: []string{"cmd"}, // avoid entrypoint lookup.
@@ -1527,7 +1527,7 @@ _EOF_
 			},
 			want: &corev1.PodSpec{
 				RestartPolicy:  corev1.RestartPolicyNever,
-				InitContainers: []corev1.Container{placeToolsInit, tektonDirInit(images.EntrypointImage, []v1beta1.Step{{Container: corev1.Container{Name: "name"}}})},
+				InitContainers: []corev1.Container{placeToolsInit, tektonDirInit(images.EntrypointImage, []v1beta1.Step{{Container: v1beta1.Container{Name: "name"}}})},
 				Containers: []corev1.Container{{
 					Name:    "step-name",
 					Image:   "image",
@@ -1556,7 +1556,7 @@ _EOF_
 			desc:         "hermetic env var",
 			featureFlags: map[string]string{"enable-api-fields": "alpha"},
 			ts: v1beta1.TaskSpec{
-				Steps: []v1beta1.Step{{Container: corev1.Container{
+				Steps: []v1beta1.Step{{Container: v1beta1.Container{
 					Name:    "name",
 					Image:   "image",
 					Command: []string{"cmd"}, // avoid entrypoint lookup.
@@ -1567,7 +1567,7 @@ _EOF_
 			},
 			want: &corev1.PodSpec{
 				RestartPolicy:  corev1.RestartPolicyNever,
-				InitContainers: []corev1.Container{placeToolsInit, tektonDirInit(images.EntrypointImage, []v1beta1.Step{{Container: corev1.Container{Name: "name"}}})},
+				InitContainers: []corev1.Container{placeToolsInit, tektonDirInit(images.EntrypointImage, []v1beta1.Step{{Container: v1beta1.Container{Name: "name"}}})},
 				Containers: []corev1.Container{{
 					Name:    "step-name",
 					Image:   "image",
@@ -1605,7 +1605,7 @@ _EOF_
 			desc:         "override hermetic env var",
 			featureFlags: map[string]string{"enable-api-fields": "alpha"},
 			ts: v1beta1.TaskSpec{
-				Steps: []v1beta1.Step{{Container: corev1.Container{
+				Steps: []v1beta1.Step{{Container: v1beta1.Container{
 					Name:    "name",
 					Image:   "image",
 					Command: []string{"cmd"}, // avoid entrypoint lookup.
@@ -1617,7 +1617,7 @@ _EOF_
 			},
 			want: &corev1.PodSpec{
 				RestartPolicy:  corev1.RestartPolicyNever,
-				InitContainers: []corev1.Container{placeToolsInit, tektonDirInit(images.EntrypointImage, []v1beta1.Step{{Container: corev1.Container{Name: "name"}}})},
+				InitContainers: []corev1.Container{placeToolsInit, tektonDirInit(images.EntrypointImage, []v1beta1.Step{{Container: v1beta1.Container{Name: "name"}}})},
 				Containers: []corev1.Container{{
 					Name:    "step-name",
 					Image:   "image",
@@ -1656,7 +1656,7 @@ _EOF_
 		}, {
 			desc: "pod for a taskRun with retries",
 			ts: v1beta1.TaskSpec{
-				Steps: []v1beta1.Step{{Container: corev1.Container{
+				Steps: []v1beta1.Step{{Container: v1beta1.Container{
 					Name:    "name",
 					Image:   "image",
 					Command: []string{"cmd"}, // avoid entrypoint lookup.
@@ -1683,7 +1683,7 @@ _EOF_
 			},
 			want: &corev1.PodSpec{
 				RestartPolicy:  corev1.RestartPolicyNever,
-				InitContainers: []corev1.Container{placeToolsInit, tektonDirInit(images.EntrypointImage, []v1beta1.Step{{Container: corev1.Container{Name: "name"}}})},
+				InitContainers: []corev1.Container{placeToolsInit, tektonDirInit(images.EntrypointImage, []v1beta1.Step{{Container: v1beta1.Container{Name: "name"}}})},
 				Containers: []corev1.Container{{
 					Name:    "step-name",
 					Image:   "image",
@@ -1718,7 +1718,7 @@ _EOF_
 		}, {
 			desc: "long-taskrun-name",
 			ts: v1beta1.TaskSpec{
-				Steps: []v1beta1.Step{{Container: corev1.Container{
+				Steps: []v1beta1.Step{{Container: v1beta1.Container{
 					Name:    "name",
 					Image:   "image",
 					Command: []string{"cmd"}, // avoid entrypoint lookup.
@@ -1728,7 +1728,7 @@ _EOF_
 			wantPodName: "task-run-0123456789-01234560d38957287bb0283c59440df14069f59-pod",
 			want: &corev1.PodSpec{
 				RestartPolicy:  corev1.RestartPolicyNever,
-				InitContainers: []corev1.Container{placeToolsInit, tektonDirInit(images.EntrypointImage, []v1beta1.Step{{Container: corev1.Container{Name: "name"}}})},
+				InitContainers: []corev1.Container{placeToolsInit, tektonDirInit(images.EntrypointImage, []v1beta1.Step{{Container: v1beta1.Container{Name: "name"}}})},
 				Containers: []corev1.Container{{
 					Name:    "step-name",
 					Image:   "image",
@@ -1873,7 +1873,7 @@ func TestPodBuildwithAlphaAPIEnabled(t *testing.T) {
 			},
 		},
 		ts: v1beta1.TaskSpec{
-			Steps: []v1beta1.Step{{Container: corev1.Container{
+			Steps: []v1beta1.Step{{Container: v1beta1.Container{
 				Name:    "name",
 				Image:   "image",
 				Command: []string{"cmd"}, // avoid entrypoint lookup.
@@ -1881,7 +1881,7 @@ func TestPodBuildwithAlphaAPIEnabled(t *testing.T) {
 		},
 		want: &corev1.PodSpec{
 			RestartPolicy:  corev1.RestartPolicyNever,
-			InitContainers: []corev1.Container{placeToolsInit, tektonDirInit(images.EntrypointImage, []v1beta1.Step{{Container: corev1.Container{Name: "name"}}})},
+			InitContainers: []corev1.Container{placeToolsInit, tektonDirInit(images.EntrypointImage, []v1beta1.Step{{Container: v1beta1.Container{Name: "name"}}})},
 			Containers: []corev1.Container{{
 				Name:    "step-name",
 				Image:   "image",
@@ -2022,7 +2022,7 @@ func TestMakeLabels(t *testing.T) {
 
 func TestShouldAddReadyAnnotationonPodCreate(t *testing.T) {
 	sd := v1beta1.Sidecar{
-		Container: corev1.Container{
+		Container: v1beta1.Container{
 			Name: "a-sidecar",
 		},
 	}

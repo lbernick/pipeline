@@ -186,7 +186,7 @@ func (s *Resource) GetInputTaskModifier(ts *v1beta1.TaskSpec, path string) (v1be
 		}
 		envVars = append(envVars, ev)
 	}
-	step := v1beta1.Step{Container: corev1.Container{
+	step := v1beta1.Step{Container: v1beta1.Container{
 		Name:    names.SimpleNameGenerator.RestrictLengthWithRandomSuffix("kubeconfig"),
 		Image:   s.KubeconfigWriterImage,
 		Command: []string{"/ko-app/kubeconfigwriter"},

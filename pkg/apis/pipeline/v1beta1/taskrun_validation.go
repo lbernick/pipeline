@@ -23,6 +23,7 @@ import (
 
 	"github.com/tektoncd/pipeline/pkg/apis/config"
 	"github.com/tektoncd/pipeline/pkg/apis/validate"
+	"k8s.io/apimachinery/pkg/api/resource"
 	"k8s.io/apimachinery/pkg/util/sets"
 	"knative.dev/pkg/apis"
 )
@@ -128,6 +129,7 @@ func validateStepOverrides(overrides []TaskRunStepOverride) (errs *apis.FieldErr
 		} else {
 			names = append(names, o.Name)
 		}
+		errs = errs.Also(validateOverrideResources(o.Resources))
 	}
 	errs = errs.Also(validateNoDuplicateNames(names, true))
 	return errs
@@ -141,8 +143,29 @@ func validateSidecarOverrides(overrides []TaskRunSidecarOverride) (errs *apis.Fi
 		} else {
 			names = append(names, o.Name)
 		}
+		errs = errs.Also(validateOverrideResources(o.Resources))
 	}
 	errs = errs.Also(validateNoDuplicateNames(names, true))
+	return errs
+}
+
+func validateOverrideResources(resources ResourceRequirements) (errs *apis.FieldError) {
+	if resources.Requests != nil {
+		for _, v := range resources.Requests {
+			_, err := resource.ParseQuantity(v)
+			if err != nil {
+				errs = errs.Also(apis.ErrInvalidValue(resources.Requests, fmt.Sprintf("invalid resource quantity %s", v)))
+			}
+		}
+	}
+	if resources.Limits != nil {
+		for _, v := range resources.Limits {
+			_, err := resource.ParseQuantity(v)
+			if err != nil {
+				errs = errs.Also(apis.ErrInvalidValue(resources.Limits, fmt.Sprintf("invalid resource quantity %s", v)))
+			}
+		}
+	}
 	return errs
 }
 

@@ -879,7 +879,7 @@ func buildPipelineStateWithLargeDepencyGraph(t *testing.T) PipelineRunState {
 			Name: "task",
 		},
 		Spec: v1beta1.TaskSpec{
-			Steps: []v1beta1.Step{{Container: corev1.Container{
+			Steps: []v1beta1.Step{{Container: v1beta1.Container{
 				Name: "step1",
 			}}},
 		},

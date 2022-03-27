@@ -70,6 +70,8 @@ type Step = v1beta1.Step
 // Sidecar has nearly the same data structure as Step, consisting of a Container and an optional Script, but does not have the ability to timeout.
 type Sidecar = v1beta1.Sidecar
 
+type Container = v1beta1.Container
+
 // +genclient
 // +genclient:noStatus
 // +k8s:deepcopy-gen:interfaces=k8s.io/apimachinery/pkg/runtime.Object

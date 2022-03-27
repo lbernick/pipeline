@@ -22,6 +22,7 @@ import (
 
 	"github.com/google/go-cmp/cmp"
 	"github.com/tektoncd/pipeline/pkg/apis/pipeline/v1alpha1"
+	"github.com/tektoncd/pipeline/pkg/apis/pipeline/v1beta1"
 	"github.com/tektoncd/pipeline/pkg/apis/resource/v1alpha1/storage"
 	"github.com/tektoncd/pipeline/test/diff"
 	"github.com/tektoncd/pipeline/test/names"
@@ -50,11 +51,11 @@ var (
 func TestBucketGetCopyFromContainerSpec(t *testing.T) {
 	names.TestingSeed()
 
-	want := []v1alpha1.Step{{Container: corev1.Container{
+	want := []v1alpha1.Step{{Container: v1beta1.Container{
 		Name:    "artifact-dest-mkdir-workspace-9l9zj",
 		Image:   "busybox",
 		Command: []string{"mkdir", "-p", "/workspace/destination"},
-	}}, {Container: corev1.Container{
+	}}, {Container: v1beta1.Container{
 		Name:         "artifact-copy-from-workspace-mz4c7",
 		Image:        "gcr.io/google.com/cloudsdktool/cloud-sdk",
 		Command:      []string{"gsutil"},
@@ -71,7 +72,7 @@ func TestBucketGetCopyFromContainerSpec(t *testing.T) {
 
 func TestBucketGetCopyToContainerSpec(t *testing.T) {
 	names.TestingSeed()
-	want := []v1alpha1.Step{{Container: corev1.Container{
+	want := []v1alpha1.Step{{Container: v1beta1.Container{
 		Name:         "artifact-copy-to-workspace-9l9zj",
 		Image:        "gcr.io/google.com/cloudsdktool/cloud-sdk",
 		Command:      []string{"gsutil"},

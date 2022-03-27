@@ -140,7 +140,7 @@ var task = &v1beta1.Task{
 		Name: "task",
 	},
 	Spec: v1beta1.TaskSpec{
-		Steps: []v1beta1.Step{{Container: corev1.Container{
+		Steps: []v1beta1.Step{{Container: v1beta1.Container{
 			Name: "step1",
 		}}},
 	},
@@ -627,7 +627,7 @@ var taskWithOptionalResourcesDeprecated = &v1beta1.Task{
 		Name: "task",
 	},
 	Spec: v1beta1.TaskSpec{
-		Steps: []v1beta1.Step{{Container: corev1.Container{
+		Steps: []v1beta1.Step{{Container: v1beta1.Container{
 			Name: "step1",
 		}}},
 		Resources: &v1beta1.TaskResources{
@@ -657,7 +657,7 @@ var taskWithOptionalResources = &v1beta1.Task{
 		Name: "task",
 	},
 	Spec: v1beta1.TaskSpec{
-		Steps: []v1beta1.Step{{Container: corev1.Container{
+		Steps: []v1beta1.Step{{Container: v1beta1.Container{
 			Name: "step1",
 		}}},
 		Resources: &v1beta1.TaskResources{
@@ -1947,7 +1947,7 @@ func TestResolvePipelineRun(t *testing.T) {
 					TaskSpec: &v1beta1.EmbeddedTask{
 						TaskSpec: v1beta1.TaskSpec{
 							Steps: []v1beta1.Step{{
-								Container: corev1.Container{Name: "step1"},
+								Container: v1beta1.Container{Name: "step1"},
 							}},
 						},
 					},

@@ -22,7 +22,7 @@ import (
 )
 
 // applyContainerReplacements applies variable interpolation on a Container (subset of a Step).
-func applyContainerReplacements(step *corev1.Container, stringReplacements map[string]string, arrayReplacements map[string][]string) {
+func applyContainerReplacements(step *Container, stringReplacements map[string]string, arrayReplacements map[string][]string) {
 	step.Name = substitution.ApplyReplacements(step.Name, stringReplacements)
 	step.Image = substitution.ApplyReplacements(step.Image, stringReplacements)
 	step.ImagePullPolicy = corev1.PullPolicy(substitution.ApplyReplacements(string(step.ImagePullPolicy), stringReplacements))

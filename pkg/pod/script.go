@@ -129,9 +129,13 @@ func convertScripts(shellImageLinux string, shellImageWin string, steps []v1beta
 func convertListOfSteps(steps []v1beta1.Step, initContainer *corev1.Container, placeScripts *bool, breakpoints []string, namePrefix string) []corev1.Container {
 	containers := []corev1.Container{}
 	for i, s := range steps {
+		container, err := s.Container.ToK8sContainer()
+		if err != nil {
+			// TODO
+		}
 		if s.Script == "" {
 			// Nothing to convert.
-			containers = append(containers, s.Container)
+			containers = append(containers, *container)
 			continue
 		}
 
@@ -194,7 +198,11 @@ cat > ${scriptfile} << '%s'
 			}
 			steps[i].VolumeMounts = append(steps[i].VolumeMounts, debugScriptsVolumeMount, debugInfoVolumeMount)
 		}
-		containers = append(containers, steps[i].Container)
+		container, err = steps[i].Container.ToK8sContainer()
+		if err != nil {
+			// TODO
+		}
+		containers = append(containers, *container)
 	}
 
 	// Place debug scripts if breakpoints are enabled

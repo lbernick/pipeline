@@ -26,7 +26,6 @@ import (
 	resource "github.com/tektoncd/pipeline/pkg/apis/resource/v1alpha1"
 	"github.com/tektoncd/pipeline/test/diff"
 	corev1 "k8s.io/api/core/v1"
-	corev1resources "k8s.io/apimachinery/pkg/api/resource"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"knative.dev/pkg/apis"
 )
@@ -109,14 +108,14 @@ func TestTaskRun_Validate(t *testing.T) {
 				TaskRef: &v1beta1.TaskRef{Name: "task"},
 				StepOverrides: []v1beta1.TaskRunStepOverride{{
 					Name: "foo",
-					Resources: corev1.ResourceRequirements{
-						Requests: corev1.ResourceList{corev1.ResourceMemory: corev1resources.MustParse("1Gi")},
+					Resources: v1beta1.ResourceRequirements{
+						Requests: v1beta1.ResourceList{corev1.ResourceMemory: "1Gi"},
 					},
 				}},
 				SidecarOverrides: []v1beta1.TaskRunSidecarOverride{{
 					Name: "bar",
-					Resources: corev1.ResourceRequirements{
-						Requests: corev1.ResourceList{corev1.ResourceMemory: corev1resources.MustParse("1Gi")},
+					Resources: v1beta1.ResourceRequirements{
+						Requests: v1beta1.ResourceList{corev1.ResourceMemory: "1Gi"},
 					},
 				}},
 			},
@@ -207,7 +206,7 @@ func TestTaskRunSpec_Invalidate(t *testing.T) {
 				Name: "taskrefname",
 			},
 			TaskSpec: &v1beta1.TaskSpec{
-				Steps: []v1beta1.Step{{Container: corev1.Container{
+				Steps: []v1beta1.Step{{Container: v1beta1.Container{
 					Name:  "mystep",
 					Image: "myimage",
 				}}},
@@ -236,7 +235,7 @@ func TestTaskRunSpec_Invalidate(t *testing.T) {
 		name: "invalid taskspec",
 		spec: v1beta1.TaskRunSpec{
 			TaskSpec: &v1beta1.TaskSpec{
-				Steps: []v1beta1.Step{{Container: corev1.Container{
+				Steps: []v1beta1.Step{{Container: v1beta1.Container{
 					Name:  "invalid-name-with-$weird-char/%",
 					Image: "myimage",
 				}}},
@@ -376,8 +375,8 @@ func TestTaskRunSpec_Invalidate(t *testing.T) {
 			},
 			StepOverrides: []v1beta1.TaskRunStepOverride{{
 				Name: "foo",
-				Resources: corev1.ResourceRequirements{
-					Requests: corev1.ResourceList{corev1.ResourceMemory: corev1resources.MustParse("1Gi")},
+				Resources: v1beta1.ResourceRequirements{
+					Requests: v1beta1.ResourceList{corev1.ResourceMemory: "1Gi"},
 				},
 			}},
 		},
@@ -390,8 +389,8 @@ func TestTaskRunSpec_Invalidate(t *testing.T) {
 			},
 			SidecarOverrides: []v1beta1.TaskRunSidecarOverride{{
 				Name: "foo",
-				Resources: corev1.ResourceRequirements{
-					Requests: corev1.ResourceList{corev1.ResourceMemory: corev1resources.MustParse("1Gi")},
+				Resources: v1beta1.ResourceRequirements{
+					Requests: v1beta1.ResourceList{corev1.ResourceMemory: "1Gi"},
 				},
 			}},
 		},
@@ -402,13 +401,13 @@ func TestTaskRunSpec_Invalidate(t *testing.T) {
 			TaskRef: &v1beta1.TaskRef{Name: "task"},
 			StepOverrides: []v1beta1.TaskRunStepOverride{{
 				Name: "foo",
-				Resources: corev1.ResourceRequirements{
-					Requests: corev1.ResourceList{corev1.ResourceMemory: corev1resources.MustParse("1Gi")},
+				Resources: v1beta1.ResourceRequirements{
+					Requests: v1beta1.ResourceList{corev1.ResourceMemory: "1Gi"},
 				},
 			}, {
 				Name: "foo",
-				Resources: corev1.ResourceRequirements{
-					Requests: corev1.ResourceList{corev1.ResourceMemory: corev1resources.MustParse("1Gi")},
+				Resources: v1beta1.ResourceRequirements{
+					Requests: v1beta1.ResourceList{corev1.ResourceMemory: "1Gi"},
 				},
 			}},
 		},
@@ -419,8 +418,8 @@ func TestTaskRunSpec_Invalidate(t *testing.T) {
 		spec: v1beta1.TaskRunSpec{
 			TaskRef: &v1beta1.TaskRef{Name: "task"},
 			StepOverrides: []v1beta1.TaskRunStepOverride{{
-				Resources: corev1.ResourceRequirements{
-					Requests: corev1.ResourceList{corev1.ResourceMemory: corev1resources.MustParse("1Gi")},
+				Resources: v1beta1.ResourceRequirements{
+					Requests: v1beta1.ResourceList{corev1.ResourceMemory: "1Gi"},
 				},
 			}},
 		},
@@ -432,13 +431,13 @@ func TestTaskRunSpec_Invalidate(t *testing.T) {
 			TaskRef: &v1beta1.TaskRef{Name: "task"},
 			SidecarOverrides: []v1beta1.TaskRunSidecarOverride{{
 				Name: "bar",
-				Resources: corev1.ResourceRequirements{
-					Requests: corev1.ResourceList{corev1.ResourceMemory: corev1resources.MustParse("1Gi")},
+				Resources: v1beta1.ResourceRequirements{
+					Requests: v1beta1.ResourceList{corev1.ResourceMemory: "1Gi"},
 				},
 			}, {
 				Name: "bar",
-				Resources: corev1.ResourceRequirements{
-					Requests: corev1.ResourceList{corev1.ResourceMemory: corev1resources.MustParse("1Gi")},
+				Resources: v1beta1.ResourceRequirements{
+					Requests: v1beta1.ResourceList{corev1.ResourceMemory: "1Gi"},
 				},
 			}},
 		},
@@ -449,8 +448,8 @@ func TestTaskRunSpec_Invalidate(t *testing.T) {
 		spec: v1beta1.TaskRunSpec{
 			TaskRef: &v1beta1.TaskRef{Name: "task"},
 			SidecarOverrides: []v1beta1.TaskRunSidecarOverride{{
-				Resources: corev1.ResourceRequirements{
-					Requests: corev1.ResourceList{corev1.ResourceMemory: corev1resources.MustParse("1Gi")},
+				Resources: v1beta1.ResourceRequirements{
+					Requests: v1beta1.ResourceList{corev1.ResourceMemory: "1Gi"},
 				},
 			}},
 		},
@@ -479,7 +478,7 @@ func TestTaskRunSpec_Validate(t *testing.T) {
 		name: "taskspec without a taskRef",
 		spec: v1beta1.TaskRunSpec{
 			TaskSpec: &v1beta1.TaskSpec{
-				Steps: []v1beta1.Step{{Container: corev1.Container{
+				Steps: []v1beta1.Step{{Container: v1beta1.Container{
 					Name:  "mystep",
 					Image: "myimage",
 				}}},
@@ -490,7 +489,7 @@ func TestTaskRunSpec_Validate(t *testing.T) {
 		spec: v1beta1.TaskRunSpec{
 			Timeout: &metav1.Duration{Duration: 0},
 			TaskSpec: &v1beta1.TaskSpec{
-				Steps: []v1beta1.Step{{Container: corev1.Container{
+				Steps: []v1beta1.Step{{Container: v1beta1.Container{
 					Name:  "mystep",
 					Image: "myimage",
 				}}},
@@ -505,7 +504,7 @@ func TestTaskRunSpec_Validate(t *testing.T) {
 				Value: *v1beta1.NewArrayOrString("value"),
 			}},
 			TaskSpec: &v1beta1.TaskSpec{
-				Steps: []v1beta1.Step{{Container: corev1.Container{
+				Steps: []v1beta1.Step{{Container: v1beta1.Container{
 					Name:  "mystep",
 					Image: "myimage",
 				}}},
@@ -516,7 +515,7 @@ func TestTaskRunSpec_Validate(t *testing.T) {
 		spec: v1beta1.TaskRunSpec{
 			TaskSpec: &v1beta1.TaskSpec{
 				Steps: []v1beta1.Step{{
-					Container: corev1.Container{
+					Container: v1beta1.Container{
 						Name:  "mystep",
 						Image: "myimage",
 					},

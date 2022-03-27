@@ -164,7 +164,7 @@ func TestTaskRunSpec_Invalid(t *testing.T) {
 				Name: "taskrefname",
 			},
 			TaskSpec: &v1alpha1.TaskSpec{TaskSpec: v1beta1.TaskSpec{
-				Steps: []v1alpha1.Step{{Container: corev1.Container{
+				Steps: []v1alpha1.Step{{Container: v1beta1.Container{
 					Name:  "mystep",
 					Image: "myimage",
 				}}},
@@ -184,7 +184,7 @@ func TestTaskRunSpec_Invalid(t *testing.T) {
 		name: "invalid taskspec",
 		spec: v1alpha1.TaskRunSpec{
 			TaskSpec: &v1alpha1.TaskSpec{TaskSpec: v1beta1.TaskSpec{
-				Steps: []v1alpha1.Step{{Container: corev1.Container{
+				Steps: []v1alpha1.Step{{Container: v1beta1.Container{
 					Name:  "invalid-name-with-$weird-char*/%",
 					Image: "myimage",
 				}}},
@@ -214,7 +214,7 @@ func TestTaskRunSpec_Validate(t *testing.T) {
 		name: "taskspec without a taskRef",
 		spec: v1alpha1.TaskRunSpec{
 			TaskSpec: &v1alpha1.TaskSpec{TaskSpec: v1beta1.TaskSpec{
-				Steps: []v1alpha1.Step{{Container: corev1.Container{
+				Steps: []v1alpha1.Step{{Container: v1beta1.Container{
 					Name:  "mystep",
 					Image: "myimage",
 				}}},
@@ -225,7 +225,7 @@ func TestTaskRunSpec_Validate(t *testing.T) {
 		spec: v1alpha1.TaskRunSpec{
 			Timeout: &metav1.Duration{Duration: 0},
 			TaskSpec: &v1alpha1.TaskSpec{TaskSpec: v1beta1.TaskSpec{
-				Steps: []v1alpha1.Step{{Container: corev1.Container{
+				Steps: []v1alpha1.Step{{Container: v1beta1.Container{
 					Name:  "mystep",
 					Image: "myimage",
 				}}},
@@ -236,7 +236,7 @@ func TestTaskRunSpec_Validate(t *testing.T) {
 		spec: v1alpha1.TaskRunSpec{
 			TaskSpec: &v1alpha1.TaskSpec{TaskSpec: v1beta1.TaskSpec{
 				Steps: []v1alpha1.Step{{
-					Container: corev1.Container{
+					Container: v1beta1.Container{
 						Name:  "mystep",
 						Image: "myimage",
 					},

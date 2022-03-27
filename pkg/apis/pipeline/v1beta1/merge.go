@@ -35,7 +35,7 @@ type mergeData struct {
 // MergeStepsWithStepTemplate takes a possibly nil container template and a
 // list of steps, merging each of the steps with the container template, if
 // it's not nil, and returning the resulting list.
-func MergeStepsWithStepTemplate(template *v1.Container, steps []Step) ([]Step, error) {
+func MergeStepsWithStepTemplate(template *Container, steps []Step) ([]Step, error) {
 	if template == nil {
 		return steps, nil
 	}
@@ -46,7 +46,7 @@ func MergeStepsWithStepTemplate(template *v1.Container, steps []Step) ([]Step, e
 	}
 
 	for i, s := range steps {
-		merged := v1.Container{}
+		merged := Container{}
 		err := mergeObjWithTemplateBytes(md, &s.Container, &merged)
 		if err != nil {
 			return nil, err
@@ -76,7 +76,7 @@ func MergeStepsWithOverrides(steps []Step, overrides []TaskRunStepOverride) ([]S
 		if !found {
 			continue
 		}
-		merged := v1.ResourceRequirements{}
+		merged := ResourceRequirements{}
 		err := mergeObjWithTemplate(&s.Resources, &o.Resources, &merged)
 		if err != nil {
 			return nil, err
@@ -102,7 +102,7 @@ func MergeSidecarsWithOverrides(sidecars []Sidecar, overrides []TaskRunSidecarOv
 		if !found {
 			continue
 		}
-		merged := v1.ResourceRequirements{}
+		merged := ResourceRequirements{}
 		err := mergeObjWithTemplate(&s.Resources, &o.Resources, &merged)
 		if err != nil {
 			return nil, err

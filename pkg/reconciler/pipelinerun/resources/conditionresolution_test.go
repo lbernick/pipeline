@@ -203,7 +203,7 @@ func TestResolvedConditionCheck_ConditionToTaskSpec(t *testing.T) {
 			},
 			Spec: v1alpha1.ConditionSpec{
 				Check: v1alpha1.Step{
-					Container: corev1.Container{
+					Container: v1beta1.Container{
 						Name:  "foo",
 						Image: "ubuntu",
 					},
@@ -211,7 +211,7 @@ func TestResolvedConditionCheck_ConditionToTaskSpec(t *testing.T) {
 			},
 		},
 		want: v1beta1.TaskSpec{
-			Steps: []v1beta1.Step{{Container: corev1.Container{
+			Steps: []v1beta1.Step{{Container: v1beta1.Container{
 				Name:  "foo",
 				Image: "ubuntu",
 			}}},
@@ -224,7 +224,7 @@ func TestResolvedConditionCheck_ConditionToTaskSpec(t *testing.T) {
 			},
 			Spec: v1alpha1.ConditionSpec{
 				Check: v1alpha1.Step{
-					Container: corev1.Container{
+					Container: v1beta1.Container{
 						Name:  "",
 						Image: "ubuntu",
 					},
@@ -232,7 +232,7 @@ func TestResolvedConditionCheck_ConditionToTaskSpec(t *testing.T) {
 			},
 		},
 		want: v1beta1.TaskSpec{
-			Steps: []v1beta1.Step{{Container: corev1.Container{
+			Steps: []v1beta1.Step{{Container: v1beta1.Container{
 				Name:  "condition-check-bar",
 				Image: "ubuntu",
 			}}},
@@ -245,7 +245,7 @@ func TestResolvedConditionCheck_ConditionToTaskSpec(t *testing.T) {
 			},
 			Spec: v1alpha1.ConditionSpec{
 				Check: v1alpha1.Step{
-					Container: corev1.Container{
+					Container: v1beta1.Container{
 						Name:  "",
 						Image: "ubuntu",
 					},
@@ -253,7 +253,7 @@ func TestResolvedConditionCheck_ConditionToTaskSpec(t *testing.T) {
 			},
 		},
 		want: v1beta1.TaskSpec{
-			Steps: []v1beta1.Step{{Container: corev1.Container{
+			Steps: []v1beta1.Step{{Container: v1beta1.Container{
 				// Shortened via: names.SimpleNameGenerator.RestrictLength
 				Name:  "condition-check-very-very-very-very-very-very-very-very-very-ve",
 				Image: "ubuntu",
@@ -267,7 +267,7 @@ func TestResolvedConditionCheck_ConditionToTaskSpec(t *testing.T) {
 			},
 			Spec: v1alpha1.ConditionSpec{
 				Check: v1alpha1.Step{
-					Container: corev1.Container{
+					Container: v1beta1.Container{
 						Name:       "$(params.name)",
 						Image:      "$(params.img)",
 						WorkingDir: "$(params.not.replaced)",
@@ -286,7 +286,7 @@ func TestResolvedConditionCheck_ConditionToTaskSpec(t *testing.T) {
 			},
 		},
 		want: v1beta1.TaskSpec{
-			Steps: []v1beta1.Step{{Container: corev1.Container{
+			Steps: []v1beta1.Step{{Container: v1beta1.Container{
 				Name:       "$(inputs.params.name)",
 				Image:      "$(inputs.params.img)",
 				WorkingDir: "$(params.not.replaced)",
@@ -307,7 +307,7 @@ func TestResolvedConditionCheck_ConditionToTaskSpec(t *testing.T) {
 			},
 			Spec: v1alpha1.ConditionSpec{
 				Check: v1alpha1.Step{
-					Container: corev1.Container{
+					Container: v1beta1.Container{
 						Name:  "name",
 						Image: "ubuntu",
 						Args:  []string{"$(resources.git-resource.revision)"},
@@ -334,7 +334,7 @@ func TestResolvedConditionCheck_ConditionToTaskSpec(t *testing.T) {
 			},
 		},
 		want: v1beta1.TaskSpec{
-			Steps: []v1beta1.Step{{Container: corev1.Container{
+			Steps: []v1beta1.Step{{Container: v1beta1.Container{
 				Name:  "name",
 				Image: "ubuntu",
 				Args:  []string{"master"},

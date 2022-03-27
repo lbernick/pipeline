@@ -51,7 +51,7 @@ var (
 		},
 		Spec: v1beta1.TaskSpec{
 			Steps: []v1beta1.Step{{
-				Container: corev1.Container{
+				Container: v1beta1.Container{
 					Image: "something",
 				},
 			}},
@@ -67,7 +67,7 @@ var (
 		},
 		Spec: v1beta1.TaskSpec{
 			Steps: []v1beta1.Step{{
-				Container: corev1.Container{
+				Container: v1beta1.Container{
 					Image: "something",
 				},
 			}},
@@ -252,7 +252,7 @@ func TestGetTaskFunc(t *testing.T) {
 					},
 					Spec: v1beta1.TaskSpec{
 						Steps: []v1beta1.Step{{
-							Container: corev1.Container{
+							Container: v1beta1.Container{
 								Image: "something",
 							},
 						}},
@@ -277,7 +277,7 @@ func TestGetTaskFunc(t *testing.T) {
 				},
 				Spec: v1beta1.TaskSpec{
 					Steps: []v1beta1.Step{{
-						Container: corev1.Container{
+						Container: v1beta1.Container{
 							Image: "something",
 						},
 					}},
@@ -307,7 +307,7 @@ func TestGetTaskFunc(t *testing.T) {
 								Name: "foo",
 							}},
 							Steps: []v1alpha1.Step{{
-								Container: corev1.Container{
+								Container: v1beta1.Container{
 									Image: "something",
 								},
 							}},
@@ -326,7 +326,7 @@ func TestGetTaskFunc(t *testing.T) {
 				},
 				Spec: v1beta1.TaskSpec{
 					Steps: []v1beta1.Step{{
-						Container: corev1.Container{
+						Container: v1beta1.Container{
 							Image: "something",
 						},
 					}},
@@ -460,7 +460,7 @@ func TestGetTaskFuncFromTaskRunSpecAlreadyFetched(t *testing.T) {
 	name := "anyname-really"
 	TaskSpec := v1beta1.TaskSpec{
 		Steps: []v1beta1.Step{{
-			Container: corev1.Container{
+			Container: v1beta1.Container{
 				Image: "myimage",
 			},
 			Script: `

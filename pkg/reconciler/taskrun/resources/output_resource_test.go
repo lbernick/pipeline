@@ -219,11 +219,11 @@ func TestValidOutputResources(t *testing.T) {
 				},
 			},
 		},
-		wantSteps: []v1beta1.Step{{Container: corev1.Container{
+		wantSteps: []v1beta1.Step{{Container: v1beta1.Container{
 			Name:    "create-dir-source-workspace-9l9zj",
 			Image:   "busybox",
 			Command: []string{"mkdir", "-p", "/workspace/output/source-workspace"},
-		}}, {Container: corev1.Container{
+		}}, {Container: v1beta1.Container{
 			Name:    "source-mkdir-source-git-mz4c7",
 			Image:   "busybox",
 			Command: []string{"mkdir", "-p", "pipeline-task-name"},
@@ -231,7 +231,7 @@ func TestValidOutputResources(t *testing.T) {
 				Name:      "pipelinerun-pvc",
 				MountPath: "/pvc",
 			}},
-		}}, {Container: corev1.Container{
+		}}, {Container: v1beta1.Container{
 			Name:    "source-copy-source-git-mssqb",
 			Image:   "busybox",
 			Command: []string{"cp", "-r", "/workspace/output/source-workspace/.", "pipeline-task-name"},
@@ -293,11 +293,11 @@ func TestValidOutputResources(t *testing.T) {
 				},
 			},
 		},
-		wantSteps: []v1beta1.Step{{Container: corev1.Container{
+		wantSteps: []v1beta1.Step{{Container: v1beta1.Container{
 			Name:    "create-dir-source-workspace-9l9zj",
 			Image:   "busybox",
 			Command: []string{"mkdir", "-p", "/workspace/output/source-workspace"},
-		}}, {Container: corev1.Container{
+		}}, {Container: v1beta1.Container{
 			Name:    "source-mkdir-source-git-mz4c7",
 			Image:   "busybox",
 			Command: []string{"mkdir", "-p", "pipeline-task-name"},
@@ -305,7 +305,7 @@ func TestValidOutputResources(t *testing.T) {
 				Name:      "pipelinerun-pvc",
 				MountPath: "/pvc",
 			}},
-		}}, {Container: corev1.Container{
+		}}, {Container: v1beta1.Container{
 			Name:    "source-copy-source-git-mssqb",
 			Image:   "busybox",
 			Command: []string{"cp", "-r", "/workspace/output/source-workspace/.", "pipeline-task-name"},
@@ -367,7 +367,7 @@ func TestValidOutputResources(t *testing.T) {
 				},
 			},
 		},
-		wantSteps: []v1beta1.Step{{Container: corev1.Container{
+		wantSteps: []v1beta1.Step{{Container: v1beta1.Container{
 			Name:    "create-dir-source-workspace-9l9zj",
 			Image:   "busybox",
 			Command: []string{"mkdir", "-p", "/workspace/output/source-workspace"},
@@ -409,7 +409,7 @@ func TestValidOutputResources(t *testing.T) {
 				},
 			},
 		},
-		wantSteps: []v1beta1.Step{{Container: corev1.Container{
+		wantSteps: []v1beta1.Step{{Container: v1beta1.Container{
 			Name:    "create-dir-source-workspace-9l9zj",
 			Image:   "busybox",
 			Command: []string{"mkdir", "-p", "/workspace/output/source-workspace"},
@@ -470,18 +470,18 @@ func TestValidOutputResources(t *testing.T) {
 			},
 		},
 		wantSteps: []v1beta1.Step{
-			{Container: corev1.Container{
+			{Container: v1beta1.Container{
 				Name:    "create-dir-source-workspace-9l9zj",
 				Image:   "busybox",
 				Command: []string{"mkdir", "-p", "/workspace/output/source-workspace"},
 			}},
-			{Container: corev1.Container{
+			{Container: v1beta1.Container{
 				Name:         "source-mkdir-source-gcs-mz4c7",
 				Image:        "busybox",
 				Command:      []string{"mkdir", "-p", "pipeline-task-path"},
 				VolumeMounts: []corev1.VolumeMount{{Name: "pipelinerun-parent-pvc", MountPath: "/pvc"}},
 			}},
-			{Container: corev1.Container{
+			{Container: v1beta1.Container{
 				Name:         "source-copy-source-gcs-mssqb",
 				Image:        "busybox",
 				Command:      []string{"cp", "-r", "/workspace/output/source-workspace/.", "pipeline-task-path"},
@@ -490,7 +490,7 @@ func TestValidOutputResources(t *testing.T) {
 					{Name: "TEKTON_RESOURCE_NAME", Value: "source-gcs"},
 				},
 			}},
-			{Container: corev1.Container{
+			{Container: v1beta1.Container{
 				Name:  "upload-source-gcs-78c5n",
 				Image: "gcr.io/google.com/cloudsdktool/cloud-sdk",
 				VolumeMounts: []corev1.VolumeMount{{
@@ -564,18 +564,18 @@ func TestValidOutputResources(t *testing.T) {
 			},
 		},
 		wantSteps: []v1beta1.Step{
-			{Container: corev1.Container{
+			{Container: v1beta1.Container{
 				Name:    "create-dir-source-workspace-9l9zj",
 				Image:   "busybox",
 				Command: []string{"mkdir", "-p", "/workspace/output/source-workspace"},
 			}},
-			{Container: corev1.Container{
+			{Container: v1beta1.Container{
 				Name:         "source-mkdir-source-gcs-mz4c7",
 				Image:        "busybox",
 				Command:      []string{"mkdir", "-p", "pipeline-task-path"},
 				VolumeMounts: []corev1.VolumeMount{{Name: "pipelinerun-pvc", MountPath: "/pvc"}},
 			}},
-			{Container: corev1.Container{
+			{Container: v1beta1.Container{
 				Name:         "source-copy-source-gcs-mssqb",
 				Image:        "busybox",
 				Command:      []string{"cp", "-r", "/workspace/output/source-workspace/.", "pipeline-task-path"},
@@ -584,7 +584,7 @@ func TestValidOutputResources(t *testing.T) {
 					{Name: "TEKTON_RESOURCE_NAME", Value: "source-gcs"},
 				},
 			}},
-			{Container: corev1.Container{
+			{Container: v1beta1.Container{
 				Name:  "upload-source-gcs-78c5n",
 				Image: "gcr.io/google.com/cloudsdktool/cloud-sdk",
 				VolumeMounts: []corev1.VolumeMount{{
@@ -651,12 +651,12 @@ func TestValidOutputResources(t *testing.T) {
 			},
 		},
 		wantSteps: []v1beta1.Step{
-			{Container: corev1.Container{
+			{Container: v1beta1.Container{
 				Name:    "create-dir-source-workspace-9l9zj",
 				Image:   "busybox",
 				Command: []string{"mkdir", "-p", "/workspace/output/source-workspace"},
 			}},
-			{Container: corev1.Container{
+			{Container: v1beta1.Container{
 				Name:  "upload-source-gcs-mz4c7",
 				Image: "gcr.io/google.com/cloudsdktool/cloud-sdk",
 				VolumeMounts: []corev1.VolumeMount{{
@@ -713,12 +713,12 @@ func TestValidOutputResources(t *testing.T) {
 			},
 		},
 		wantSteps: []v1beta1.Step{
-			{Container: corev1.Container{
+			{Container: v1beta1.Container{
 				Name:    "create-dir-source-workspace-9l9zj",
 				Image:   "busybox",
 				Command: []string{"mkdir", "-p", "/workspace/output/source-workspace"},
 			}},
-			{Container: corev1.Container{
+			{Container: v1beta1.Container{
 				Name:  "upload-source-gcs-mz4c7",
 				Image: "gcr.io/google.com/cloudsdktool/cloud-sdk",
 				VolumeMounts: []corev1.VolumeMount{{
@@ -778,7 +778,7 @@ func TestValidOutputResources(t *testing.T) {
 				},
 			},
 		},
-		wantSteps: []v1beta1.Step{{Container: corev1.Container{
+		wantSteps: []v1beta1.Step{{Container: v1beta1.Container{
 			Name:    "create-dir-source-workspace-9l9zj",
 			Image:   "busybox",
 			Command: []string{"mkdir", "-p", "/workspace/output/source-workspace"},
@@ -824,7 +824,7 @@ func TestValidOutputResources(t *testing.T) {
 				},
 			},
 		},
-		wantSteps: []v1beta1.Step{{Container: corev1.Container{
+		wantSteps: []v1beta1.Step{{Container: v1beta1.Container{
 			Name:    "create-dir-source-workspace-9l9zj",
 			Image:   "busybox",
 			Command: []string{"mkdir", "-p", "/workspace"},
@@ -864,7 +864,7 @@ func TestValidOutputResources(t *testing.T) {
 				},
 			},
 		},
-		wantSteps: []v1beta1.Step{{Container: corev1.Container{
+		wantSteps: []v1beta1.Step{{Container: v1beta1.Container{
 			Name:    "create-dir-source-workspace-9l9zj",
 			Image:   "busybox",
 			Command: []string{"mkdir", "-p", "/workspace/output/source-workspace"},
@@ -915,11 +915,11 @@ func TestValidOutputResources(t *testing.T) {
 				},
 			},
 		},
-		wantSteps: []v1beta1.Step{{Container: corev1.Container{
+		wantSteps: []v1beta1.Step{{Container: v1beta1.Container{
 			Name:    "create-dir-source-workspace-1-mz4c7",
 			Image:   "busybox",
 			Command: []string{"mkdir", "-p", "/workspace/output/source-workspace-1"},
-		}}, {Container: corev1.Container{
+		}}, {Container: v1beta1.Container{
 			Name:    "create-dir-source-workspace-9l9zj",
 			Image:   "busybox",
 			Command: []string{"mkdir", "-p", "/workspace/output/source-workspace"},
@@ -1007,11 +1007,11 @@ func TestValidOutputResourcesWithBucketStorage(t *testing.T) {
 				},
 			},
 		},
-		wantSteps: []v1beta1.Step{{Container: corev1.Container{
+		wantSteps: []v1beta1.Step{{Container: v1beta1.Container{
 			Name:    "create-dir-source-workspace-9l9zj",
 			Image:   "busybox",
 			Command: []string{"mkdir", "-p", "/workspace/output/source-workspace"},
-		}}, {Container: corev1.Container{
+		}}, {Container: v1beta1.Container{
 			Name:    "artifact-copy-to-source-git-mz4c7",
 			Image:   "gcr.io/google.com/cloudsdktool/cloud-sdk",
 			Command: []string{"gsutil"},
@@ -1058,11 +1058,11 @@ func TestValidOutputResourcesWithBucketStorage(t *testing.T) {
 				},
 			},
 		},
-		wantSteps: []v1beta1.Step{{Container: corev1.Container{
+		wantSteps: []v1beta1.Step{{Container: v1beta1.Container{
 			Name:    "create-dir-source-workspace-9l9zj",
 			Image:   "busybox",
 			Command: []string{"mkdir", "-p", "/workspace/output/source-workspace"},
-		}}, {Container: corev1.Container{
+		}}, {Container: v1beta1.Container{
 			Name:    "artifact-copy-to-source-git-mz4c7",
 			Image:   "gcr.io/google.com/cloudsdktool/cloud-sdk",
 			Command: []string{"gsutil"},
@@ -1104,7 +1104,7 @@ func TestValidOutputResourcesWithBucketStorage(t *testing.T) {
 				},
 			},
 		},
-		wantSteps: []v1beta1.Step{{Container: corev1.Container{
+		wantSteps: []v1beta1.Step{{Container: v1beta1.Container{
 			Name:    "create-dir-source-workspace-9l9zj",
 			Image:   "busybox",
 			Command: []string{"mkdir", "-p", "/workspace/output/source-workspace"},
@@ -1448,18 +1448,18 @@ func TestInputOutputBucketResources(t *testing.T) {
 			},
 		},
 		wantSteps: []v1beta1.Step{
-			{Container: corev1.Container{
+			{Container: v1beta1.Container{
 				Name:    "create-dir-source-workspace-mssqb",
 				Image:   "busybox",
 				Command: []string{"mkdir", "-p", "/workspace/output/source-workspace"},
 			}},
-			{Container: corev1.Container{
+			{Container: v1beta1.Container{
 				Name:         "artifact-dest-mkdir-source-workspace-9l9zj",
 				Image:        "busybox",
 				Command:      []string{"mkdir", "-p", "/workspace/faraway-disk"},
 				VolumeMounts: nil,
 			}},
-			{Container: corev1.Container{
+			{Container: v1beta1.Container{
 				Name:    "artifact-copy-from-source-workspace-mz4c7",
 				Image:   "gcr.io/google.com/cloudsdktool/cloud-sdk",
 				Command: []string{"gsutil"},
@@ -1476,7 +1476,7 @@ func TestInputOutputBucketResources(t *testing.T) {
 				}},
 				VolumeMounts: []corev1.VolumeMount{{Name: "volume-bucket-sname", MountPath: "/var/bucketsecret/sname"}},
 			}},
-			{Container: corev1.Container{
+			{Container: v1beta1.Container{
 				Name:         "upload-source-gcs-bucket-78c5n",
 				Image:        "gcr.io/google.com/cloudsdktool/cloud-sdk",
 				VolumeMounts: nil,
@@ -1563,18 +1563,18 @@ func TestInputOutputBucketResources(t *testing.T) {
 			},
 		},
 		wantSteps: []v1beta1.Step{
-			{Container: corev1.Container{
+			{Container: v1beta1.Container{
 				Name:    "create-dir-source-workspace-3-6nl7g",
 				Image:   "busybox",
 				Command: []string{"mkdir", "-p", "/workspace/output/source-workspace-3"},
 			}},
-			{Container: corev1.Container{
+			{Container: v1beta1.Container{
 				Name:         "artifact-dest-mkdir-source-workspace-mssqb",
 				Image:        "busybox",
 				Command:      []string{"mkdir", "-p", "/workspace/faraway-disk"},
 				VolumeMounts: nil,
 			}},
-			{Container: corev1.Container{
+			{Container: v1beta1.Container{
 				Name:    "artifact-copy-from-source-workspace-78c5n",
 				Image:   "gcr.io/google.com/cloudsdktool/cloud-sdk",
 				Command: []string{"gsutil"},
@@ -1593,14 +1593,14 @@ func TestInputOutputBucketResources(t *testing.T) {
 				},
 				VolumeMounts: []corev1.VolumeMount{{Name: "volume-bucket-sname", MountPath: "/var/bucketsecret/sname"}},
 			}},
-			{Container: corev1.Container{
+			{Container: v1beta1.Container{
 				Name:         "artifact-dest-mkdir-source-workspace-2-9l9zj",
 				Image:        "busybox",
 				VolumeMounts: nil,
 				Command:      []string{"mkdir", "-p", "/workspace/faraway-disk-2"},
 				Env:          nil,
 			}},
-			{Container: corev1.Container{
+			{Container: v1beta1.Container{
 				Name:    "artifact-copy-from-source-workspace-2-mz4c7",
 				Image:   "gcr.io/google.com/cloudsdktool/cloud-sdk",
 				Command: []string{"gsutil"},
@@ -1612,7 +1612,7 @@ func TestInputOutputBucketResources(t *testing.T) {
 					},
 				},
 				VolumeMounts: []corev1.VolumeMount{{Name: "volume-bucket-sname", MountPath: "/var/bucketsecret/sname"}},
-			}}, {Container: corev1.Container{
+			}}, {Container: v1beta1.Container{
 				Name:    "upload-source-gcs-bucket-3-j2tds",
 				Image:   "gcr.io/google.com/cloudsdktool/cloud-sdk",
 				Command: []string{"gsutil"},
@@ -1682,18 +1682,18 @@ func TestInputOutputBucketResources(t *testing.T) {
 			},
 		},
 		wantSteps: []v1beta1.Step{
-			{Container: corev1.Container{
+			{Container: v1beta1.Container{
 				Name:    "create-dir-source-workspace-2-mssqb",
 				Image:   "busybox",
 				Command: []string{"mkdir", "-p", "/workspace/output/source-workspace-2"},
 			}},
-			{Container: corev1.Container{
+			{Container: v1beta1.Container{
 				Name:         "create-dir-source-workspace-9l9zj",
 				Image:        "busybox",
 				Command:      []string{"mkdir", "-p", "/workspace/output/source-workspace"},
 				VolumeMounts: nil,
 			}},
-			{Container: corev1.Container{
+			{Container: v1beta1.Container{
 				Name:    "upload-source-gcs-bucket-mz4c7",
 				Image:   "gcr.io/google.com/cloudsdktool/cloud-sdk",
 				Command: []string{"gsutil"},
@@ -1709,7 +1709,7 @@ func TestInputOutputBucketResources(t *testing.T) {
 					Value: pipeline.HomeDir,
 				}},
 			}},
-			{Container: corev1.Container{
+			{Container: v1beta1.Container{
 				Name:         "upload-source-gcs-bucket-2-78c5n",
 				Image:        "gcr.io/google.com/cloudsdktool/cloud-sdk",
 				VolumeMounts: nil,

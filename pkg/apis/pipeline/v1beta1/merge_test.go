@@ -32,49 +32,49 @@ func TestMergeStepsWithStepTemplate(t *testing.T) {
 
 	for _, tc := range []struct {
 		name     string
-		template *corev1.Container
+		template *Container
 		steps    []Step
 		expected []Step
 	}{{
 		name:     "nil-template",
 		template: nil,
 		steps: []Step{{
-			Container: corev1.Container{Image: "some-image"},
+			Container: Container{Image: "some-image"},
 			OnError:   "foo",
 		}},
 		expected: []Step{{
-			Container: corev1.Container{Image: "some-image"},
+			Container: Container{Image: "some-image"},
 			OnError:   "foo",
 		}},
 	}, {
 		name: "not-overlapping",
-		template: &corev1.Container{
+		template: &Container{
 			Command: []string{"/somecmd"},
 		},
 		steps: []Step{{
-			Container: corev1.Container{Image: "some-image"},
+			Container: Container{Image: "some-image"},
 			OnError:   "foo",
 		}},
 		expected: []Step{{
-			Container: corev1.Container{Command: []string{"/somecmd"}, Image: "some-image"},
+			Container: Container{Command: []string{"/somecmd"}, Image: "some-image"},
 			OnError:   "foo",
 		}},
 	}, {
 		name: "overwriting-one-field",
-		template: &corev1.Container{
+		template: &Container{
 			Image:   "some-image",
 			Command: []string{"/somecmd"},
 		},
-		steps: []Step{{Container: corev1.Container{
+		steps: []Step{{Container: Container{
 			Image: "some-other-image",
 		}}},
-		expected: []Step{{Container: corev1.Container{
+		expected: []Step{{Container: Container{
 			Command: []string{"/somecmd"},
 			Image:   "some-other-image",
 		}}},
 	}, {
 		name: "merge-and-overwrite-slice",
-		template: &corev1.Container{
+		template: &Container{
 			Env: []corev1.EnvVar{{
 				Name:  "KEEP_THIS",
 				Value: "A_VALUE",
@@ -83,7 +83,7 @@ func TestMergeStepsWithStepTemplate(t *testing.T) {
 				Value: "ORIGINAL_VALUE",
 			}},
 		},
-		steps: []Step{{Container: corev1.Container{
+		steps: []Step{{Container: Container{
 			Env: []corev1.EnvVar{{
 				Name:  "NEW_KEY",
 				Value: "A_VALUE",
@@ -92,7 +92,7 @@ func TestMergeStepsWithStepTemplate(t *testing.T) {
 				Value: "NEW_VALUE",
 			}},
 		}}},
-		expected: []Step{{Container: corev1.Container{
+		expected: []Step{{Container: Container{
 			Env: []corev1.EnvVar{{
 				Name:  "NEW_KEY",
 				Value: "A_VALUE",
@@ -127,85 +127,85 @@ func TestMergeStepOverrides(t *testing.T) {
 	}{{
 		name: "no overrides",
 		steps: []Step{{
-			Container: corev1.Container{
+			Container: Container{
 				Name: "foo",
-				Resources: corev1.ResourceRequirements{
-					Requests: corev1.ResourceList{corev1.ResourceMemory: resource.MustParse("1Gi")},
+				Resources: ResourceRequirements{
+					Requests: ResourceList{corev1.ResourceMemory: "1Gi"},
 				},
 			},
 		}},
 		want: []Step{{
-			Container: corev1.Container{
+			Container: Container{
 				Name: "foo",
-				Resources: corev1.ResourceRequirements{
-					Requests: corev1.ResourceList{corev1.ResourceMemory: resource.MustParse("1Gi")},
+				Resources: ResourceRequirements{
+					Requests: ResourceList{corev1.ResourceMemory: "1Gi"},
 				},
 			},
 		}},
 	}, {
 		name: "not all steps overridden",
 		steps: []Step{{
-			Container: corev1.Container{
+			Container: Container{
 				Name: "foo",
-				Resources: corev1.ResourceRequirements{
-					Requests: corev1.ResourceList{corev1.ResourceMemory: resource.MustParse("1Gi")},
+				Resources: ResourceRequirements{
+					Requests: ResourceList{corev1.ResourceMemory: "1Gi"},
 				},
 			},
 		}, {
-			Container: corev1.Container{
+			Container: Container{
 				Name: "bar",
-				Resources: corev1.ResourceRequirements{
-					Requests: corev1.ResourceList{corev1.ResourceMemory: resource.MustParse("1Gi")},
+				Resources: ResourceRequirements{
+					Requests: ResourceList{corev1.ResourceMemory: "1Gi"},
 				},
 			},
 		}},
 		stepOverrides: []TaskRunStepOverride{{
 			Name: "bar",
-			Resources: corev1.ResourceRequirements{
-				Requests: corev1.ResourceList{corev1.ResourceMemory: resource.MustParse("2Gi")},
+			Resources: ResourceRequirements{
+				Requests: ResourceList{corev1.ResourceMemory: "2Gi"},
 			},
 		}},
 		want: []Step{{
-			Container: corev1.Container{
+			Container: Container{
 				Name: "foo",
-				Resources: corev1.ResourceRequirements{
-					Requests: corev1.ResourceList{corev1.ResourceMemory: resource.MustParse("1Gi")},
+				Resources: ResourceRequirements{
+					Requests: ResourceList{corev1.ResourceMemory: "1Gi"},
 				},
 			},
 		}, {
-			Container: corev1.Container{
+			Container: Container{
 				Name: "bar",
-				Resources: corev1.ResourceRequirements{
-					Requests: corev1.ResourceList{corev1.ResourceMemory: resource.MustParse("2Gi")},
+				Resources: ResourceRequirements{
+					Requests: ResourceList{corev1.ResourceMemory: "2Gi"},
 				},
 			},
 		}},
 	}, {
 		name: "override memory but not CPU",
 		steps: []Step{{
-			Container: corev1.Container{
+			Container: Container{
 				Name: "foo",
-				Resources: corev1.ResourceRequirements{
-					Requests: corev1.ResourceList{
-						corev1.ResourceMemory: resource.MustParse("1Gi"),
-						corev1.ResourceCPU:    resource.MustParse("100m"),
+				Resources: ResourceRequirements{
+					Requests: ResourceList{
+						corev1.ResourceMemory: "1Gi",
+						corev1.ResourceCPU:    "100m",
 					},
 				},
 			},
 		}},
 		stepOverrides: []TaskRunStepOverride{{
 			Name: "foo",
-			Resources: corev1.ResourceRequirements{
-				Requests: corev1.ResourceList{corev1.ResourceMemory: resource.MustParse("2Gi")},
+			Resources: ResourceRequirements{
+				Requests: ResourceList{corev1.ResourceMemory: "2Gi"},
 			},
 		}},
 		want: []Step{{
-			Container: corev1.Container{
+			Container: Container{
 				Name: "foo",
-				Resources: corev1.ResourceRequirements{
-					Requests: corev1.ResourceList{
-						corev1.ResourceCPU:    resource.MustParse("100m"),
-						corev1.ResourceMemory: resource.MustParse("2Gi"),
+				Resources: ResourceRequirements{
+					Requests: ResourceList{
+						corev1.ResourceCPU:    "100m",
+						corev1.ResourceMemory: "2Gi",
 					},
 				},
 			},
@@ -213,53 +213,53 @@ func TestMergeStepOverrides(t *testing.T) {
 	}, {
 		name: "override request but not limit",
 		steps: []Step{{
-			Container: corev1.Container{
+			Container: Container{
 				Name: "foo",
-				Resources: corev1.ResourceRequirements{
-					Requests: corev1.ResourceList{corev1.ResourceMemory: resource.MustParse("1Gi")},
-					Limits:   corev1.ResourceList{corev1.ResourceMemory: resource.MustParse("2Gi")},
+				Resources: ResourceRequirements{
+					Requests: ResourceList{corev1.ResourceMemory: "1Gi"},
+					Limits:   ResourceList{corev1.ResourceMemory: "2Gi"},
 				},
 			},
 		}},
 		stepOverrides: []TaskRunStepOverride{{
 			Name: "foo",
-			Resources: corev1.ResourceRequirements{
-				Requests: corev1.ResourceList{corev1.ResourceMemory: resource.MustParse("1.5Gi")},
+			Resources: ResourceRequirements{
+				Requests: ResourceList{corev1.ResourceMemory: "1.5Gi"},
 			},
 		}},
 		want: []Step{{
-			Container: corev1.Container{
+			Container: Container{
 				Name: "foo",
-				Resources: corev1.ResourceRequirements{
-					Requests: corev1.ResourceList{corev1.ResourceMemory: resource.MustParse("1.5Gi")},
-					Limits:   corev1.ResourceList{corev1.ResourceMemory: resource.MustParse("2Gi")},
+				Resources: ResourceRequirements{
+					Requests: ResourceList{corev1.ResourceMemory: "1.5Gi"},
+					Limits:   ResourceList{corev1.ResourceMemory: "2Gi"},
 				},
 			},
 		}},
 	}, {
 		name: "override request and limit",
 		steps: []Step{{
-			Container: corev1.Container{
+			Container: Container{
 				Name: "foo",
-				Resources: corev1.ResourceRequirements{
-					Requests: corev1.ResourceList{corev1.ResourceMemory: resource.MustParse("1Gi")},
-					Limits:   corev1.ResourceList{corev1.ResourceMemory: resource.MustParse("2Gi")},
+				Resources: ResourceRequirements{
+					Requests: ResourceList{corev1.ResourceMemory: "1Gi"},
+					Limits:   ResourceList{corev1.ResourceMemory: "2Gi"},
 				},
 			},
 		}},
 		stepOverrides: []TaskRunStepOverride{{
 			Name: "foo",
-			Resources: corev1.ResourceRequirements{
-				Requests: corev1.ResourceList{corev1.ResourceMemory: resource.MustParse("1.5Gi")},
-				Limits:   corev1.ResourceList{corev1.ResourceMemory: resource.MustParse("3Gi")},
+			Resources: ResourceRequirements{
+				Requests: ResourceList{corev1.ResourceMemory: "1.5Gi"},
+				Limits:   ResourceList{corev1.ResourceMemory: "3Gi"},
 			},
 		}},
 		want: []Step{{
-			Container: corev1.Container{
+			Container: Container{
 				Name: "foo",
-				Resources: corev1.ResourceRequirements{
-					Requests: corev1.ResourceList{corev1.ResourceMemory: resource.MustParse("1.5Gi")},
-					Limits:   corev1.ResourceList{corev1.ResourceMemory: resource.MustParse("3Gi")},
+				Resources: ResourceRequirements{
+					Requests: ResourceList{corev1.ResourceMemory: "1.5Gi"},
+					Limits:   ResourceList{corev1.ResourceMemory: "3Gi"},
 				},
 			},
 		}},
@@ -268,26 +268,26 @@ func TestMergeStepOverrides(t *testing.T) {
 		// instead, we let k8s reject the resulting pod.
 		name: "new request > old limit",
 		steps: []Step{{
-			Container: corev1.Container{
+			Container: Container{
 				Name: "foo",
-				Resources: corev1.ResourceRequirements{
-					Requests: corev1.ResourceList{corev1.ResourceMemory: resource.MustParse("1Gi")},
-					Limits:   corev1.ResourceList{corev1.ResourceMemory: resource.MustParse("2Gi")},
+				Resources: ResourceRequirements{
+					Requests: ResourceList{corev1.ResourceMemory: "1Gi"},
+					Limits:   ResourceList{corev1.ResourceMemory: "2Gi"},
 				},
 			},
 		}},
 		stepOverrides: []TaskRunStepOverride{{
 			Name: "foo",
-			Resources: corev1.ResourceRequirements{
-				Requests: corev1.ResourceList{corev1.ResourceMemory: resource.MustParse("3Gi")},
+			Resources: ResourceRequirements{
+				Requests: ResourceList{corev1.ResourceMemory: "3Gi"},
 			},
 		}},
 		want: []Step{{
-			Container: corev1.Container{
+			Container: Container{
 				Name: "foo",
-				Resources: corev1.ResourceRequirements{
-					Requests: corev1.ResourceList{corev1.ResourceMemory: resource.MustParse("3Gi")},
-					Limits:   corev1.ResourceList{corev1.ResourceMemory: resource.MustParse("2Gi")},
+				Resources: ResourceRequirements{
+					Requests: ResourceList{corev1.ResourceMemory: "3Gi"},
+					Limits:   ResourceList{corev1.ResourceMemory: "2Gi"},
 				},
 			},
 		}},
@@ -314,85 +314,85 @@ func TestMergeSidecarOverrides(t *testing.T) {
 	}{{
 		name: "no overrides",
 		sidecars: []Sidecar{{
-			Container: corev1.Container{
+			Container: Container{
 				Name: "foo",
-				Resources: corev1.ResourceRequirements{
-					Requests: corev1.ResourceList{corev1.ResourceMemory: resource.MustParse("1Gi")},
+				Resources: ResourceRequirements{
+					Requests: ResourceList{corev1.ResourceMemory: "1Gi"},
 				},
 			},
 		}},
 		want: []Sidecar{{
-			Container: corev1.Container{
+			Container: Container{
 				Name: "foo",
-				Resources: corev1.ResourceRequirements{
-					Requests: corev1.ResourceList{corev1.ResourceMemory: resource.MustParse("1Gi")},
+				Resources: ResourceRequirements{
+					Requests: ResourceList{corev1.ResourceMemory: "1Gi"},
 				},
 			},
 		}},
 	}, {
 		name: "not all sidecars overridden",
 		sidecars: []Sidecar{{
-			Container: corev1.Container{
+			Container: Container{
 				Name: "foo",
-				Resources: corev1.ResourceRequirements{
-					Requests: corev1.ResourceList{corev1.ResourceMemory: resource.MustParse("1Gi")},
+				Resources: ResourceRequirements{
+					Requests: ResourceList{corev1.ResourceMemory: "1Gi"},
 				},
 			},
 		}, {
-			Container: corev1.Container{
+			Container: Container{
 				Name: "bar",
-				Resources: corev1.ResourceRequirements{
-					Requests: corev1.ResourceList{corev1.ResourceMemory: resource.MustParse("1Gi")},
+				Resources: ResourceRequirements{
+					Requests: ResourceList{corev1.ResourceMemory: "1Gi"},
 				},
 			},
 		}},
 		sidecarOverrides: []TaskRunSidecarOverride{{
 			Name: "bar",
-			Resources: corev1.ResourceRequirements{
-				Requests: corev1.ResourceList{corev1.ResourceMemory: resource.MustParse("2Gi")},
+			Resources: ResourceRequirements{
+				Requests: ResourceList{corev1.ResourceMemory: "2Gi"},
 			},
 		}},
 		want: []Sidecar{{
-			Container: corev1.Container{
+			Container: Container{
 				Name: "foo",
-				Resources: corev1.ResourceRequirements{
-					Requests: corev1.ResourceList{corev1.ResourceMemory: resource.MustParse("1Gi")},
+				Resources: ResourceRequirements{
+					Requests: ResourceList{corev1.ResourceMemory: "1Gi"},
 				},
 			},
 		}, {
-			Container: corev1.Container{
+			Container: Container{
 				Name: "bar",
-				Resources: corev1.ResourceRequirements{
-					Requests: corev1.ResourceList{corev1.ResourceMemory: resource.MustParse("2Gi")},
+				Resources: ResourceRequirements{
+					Requests: ResourceList{corev1.ResourceMemory: "2Gi"},
 				},
 			},
 		}},
 	}, {
 		name: "override memory but not CPU",
 		sidecars: []Sidecar{{
-			Container: corev1.Container{
+			Container: Container{
 				Name: "foo",
-				Resources: corev1.ResourceRequirements{
-					Requests: corev1.ResourceList{
-						corev1.ResourceMemory: resource.MustParse("1Gi"),
-						corev1.ResourceCPU:    resource.MustParse("100m"),
+				Resources: ResourceRequirements{
+					Requests: ResourceList{
+						corev1.ResourceMemory: "1Gi",
+						corev1.ResourceCPU:    "100m",
 					},
 				},
 			},
 		}},
 		sidecarOverrides: []TaskRunSidecarOverride{{
 			Name: "foo",
-			Resources: corev1.ResourceRequirements{
-				Requests: corev1.ResourceList{corev1.ResourceMemory: resource.MustParse("2Gi")},
+			Resources: ResourceRequirements{
+				Requests: ResourceList{corev1.ResourceMemory: "2Gi"},
 			},
 		}},
 		want: []Sidecar{{
-			Container: corev1.Container{
+			Container: Container{
 				Name: "foo",
-				Resources: corev1.ResourceRequirements{
-					Requests: corev1.ResourceList{
-						corev1.ResourceCPU:    resource.MustParse("100m"),
-						corev1.ResourceMemory: resource.MustParse("2Gi"),
+				Resources: ResourceRequirements{
+					Requests: ResourceList{
+						corev1.ResourceCPU:    "100m",
+						corev1.ResourceMemory: "2Gi",
 					},
 				},
 			},
@@ -400,53 +400,53 @@ func TestMergeSidecarOverrides(t *testing.T) {
 	}, {
 		name: "override request but not limit",
 		sidecars: []Sidecar{{
-			Container: corev1.Container{
+			Container: Container{
 				Name: "foo",
-				Resources: corev1.ResourceRequirements{
-					Requests: corev1.ResourceList{corev1.ResourceMemory: resource.MustParse("1Gi")},
-					Limits:   corev1.ResourceList{corev1.ResourceMemory: resource.MustParse("2Gi")},
+				Resources: ResourceRequirements{
+					Requests: ResourceList{corev1.ResourceMemory: "1Gi"},
+					Limits:   ResourceList{corev1.ResourceMemory: "2Gi"},
 				},
 			},
 		}},
 		sidecarOverrides: []TaskRunSidecarOverride{{
 			Name: "foo",
-			Resources: corev1.ResourceRequirements{
-				Requests: corev1.ResourceList{corev1.ResourceMemory: resource.MustParse("1.5Gi")},
+			Resources: ResourceRequirements{
+				Requests: ResourceList{corev1.ResourceMemory: "1.5Gi"},
 			},
 		}},
 		want: []Sidecar{{
-			Container: corev1.Container{
+			Container: Container{
 				Name: "foo",
-				Resources: corev1.ResourceRequirements{
-					Requests: corev1.ResourceList{corev1.ResourceMemory: resource.MustParse("1.5Gi")},
-					Limits:   corev1.ResourceList{corev1.ResourceMemory: resource.MustParse("2Gi")},
+				Resources: ResourceRequirements{
+					Requests: ResourceList{corev1.ResourceMemory: "1.5Gi"},
+					Limits:   ResourceList{corev1.ResourceMemory: "2Gi"},
 				},
 			},
 		}},
 	}, {
 		name: "override request and limit",
 		sidecars: []Sidecar{{
-			Container: corev1.Container{
+			Container: Container{
 				Name: "foo",
-				Resources: corev1.ResourceRequirements{
-					Requests: corev1.ResourceList{corev1.ResourceMemory: resource.MustParse("1Gi")},
-					Limits:   corev1.ResourceList{corev1.ResourceMemory: resource.MustParse("2Gi")},
+				Resources: ResourceRequirements{
+					Requests: ResourceList{corev1.ResourceMemory: "1Gi"},
+					Limits:   ResourceList{corev1.ResourceMemory: "2Gi"},
 				},
 			},
 		}},
 		sidecarOverrides: []TaskRunSidecarOverride{{
 			Name: "foo",
-			Resources: corev1.ResourceRequirements{
-				Requests: corev1.ResourceList{corev1.ResourceMemory: resource.MustParse("1.5Gi")},
-				Limits:   corev1.ResourceList{corev1.ResourceMemory: resource.MustParse("3Gi")},
+			Resources: ResourceRequirements{
+				Requests: ResourceList{corev1.ResourceMemory: "1.5Gi"},
+				Limits:   ResourceList{corev1.ResourceMemory: "3Gi"},
 			},
 		}},
 		want: []Sidecar{{
-			Container: corev1.Container{
+			Container: Container{
 				Name: "foo",
-				Resources: corev1.ResourceRequirements{
-					Requests: corev1.ResourceList{corev1.ResourceMemory: resource.MustParse("1.5Gi")},
-					Limits:   corev1.ResourceList{corev1.ResourceMemory: resource.MustParse("3Gi")},
+				Resources: ResourceRequirements{
+					Requests: ResourceList{corev1.ResourceMemory: "1.5Gi"},
+					Limits:   ResourceList{corev1.ResourceMemory: "3Gi"},
 				},
 			},
 		}},
@@ -455,26 +455,26 @@ func TestMergeSidecarOverrides(t *testing.T) {
 		// instead, we let k8s reject the resulting pod.
 		name: "new request > old limit",
 		sidecars: []Sidecar{{
-			Container: corev1.Container{
+			Container: Container{
 				Name: "foo",
-				Resources: corev1.ResourceRequirements{
-					Requests: corev1.ResourceList{corev1.ResourceMemory: resource.MustParse("1Gi")},
-					Limits:   corev1.ResourceList{corev1.ResourceMemory: resource.MustParse("2Gi")},
+				Resources: ResourceRequirements{
+					Requests: ResourceList{corev1.ResourceMemory: "1Gi"},
+					Limits:   ResourceList{corev1.ResourceMemory: "2Gi"},
 				},
 			},
 		}},
 		sidecarOverrides: []TaskRunSidecarOverride{{
 			Name: "foo",
-			Resources: corev1.ResourceRequirements{
-				Requests: corev1.ResourceList{corev1.ResourceMemory: resource.MustParse("3Gi")},
+			Resources: ResourceRequirements{
+				Requests: ResourceList{corev1.ResourceMemory: "3Gi"},
 			},
 		}},
 		want: []Sidecar{{
-			Container: corev1.Container{
+			Container: Container{
 				Name: "foo",
-				Resources: corev1.ResourceRequirements{
-					Requests: corev1.ResourceList{corev1.ResourceMemory: resource.MustParse("3Gi")},
-					Limits:   corev1.ResourceList{corev1.ResourceMemory: resource.MustParse("2Gi")},
+				Resources: ResourceRequirements{
+					Requests: ResourceList{corev1.ResourceMemory: "3Gi"},
+					Limits:   ResourceList{corev1.ResourceMemory: "2Gi"},
 				},
 			},
 		}},

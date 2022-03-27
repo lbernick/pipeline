@@ -26,7 +26,6 @@ import (
 	"github.com/tektoncd/pipeline/pkg/apis/pipeline/v1beta1"
 	"github.com/tektoncd/pipeline/test/diff"
 	corev1 "k8s.io/api/core/v1"
-	corev1resources "k8s.io/apimachinery/pkg/api/resource"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"knative.dev/pkg/apis"
 	logtesting "knative.dev/pkg/logging/testing"
@@ -259,7 +258,7 @@ func TestPipelineRun_Validate(t *testing.T) {
 								Type: v1beta1.ParamTypeArray,
 							}},
 							Steps: []v1beta1.Step{{
-								Container: corev1.Container{
+								Container: v1beta1.Container{
 									Name:    "echo",
 									Image:   "ubuntu",
 									Command: []string{"echo"},
@@ -394,14 +393,14 @@ func TestPipelineRun_Validate(t *testing.T) {
 						PipelineTaskName: "bar",
 						StepOverrides: []v1beta1.TaskRunStepOverride{{
 							Name: "task-1",
-							Resources: corev1.ResourceRequirements{
-								Requests: corev1.ResourceList{corev1.ResourceMemory: corev1resources.MustParse("1Gi")},
+							Resources: v1beta1.ResourceRequirements{
+								Requests: v1beta1.ResourceList{corev1.ResourceMemory: "1Gi"},
 							}},
 						},
 						SidecarOverrides: []v1beta1.TaskRunSidecarOverride{{
 							Name: "task-1",
-							Resources: corev1.ResourceRequirements{
-								Requests: corev1.ResourceList{corev1.ResourceMemory: corev1resources.MustParse("1Gi")},
+							Resources: v1beta1.ResourceRequirements{
+								Requests: v1beta1.ResourceList{corev1.ResourceMemory: "1Gi"},
 							}},
 						},
 					},
@@ -570,8 +569,8 @@ func TestPipelineRunSpec_Invalidate(t *testing.T) {
 					PipelineTaskName: "bar",
 					StepOverrides: []v1beta1.TaskRunStepOverride{{
 						Name: "task-1",
-						Resources: corev1.ResourceRequirements{
-							Requests: corev1.ResourceList{corev1.ResourceMemory: corev1resources.MustParse("1Gi")},
+						Resources: v1beta1.ResourceRequirements{
+							Requests: v1beta1.ResourceList{corev1.ResourceMemory: "1Gi"},
 						}},
 					},
 				},
@@ -587,8 +586,8 @@ func TestPipelineRunSpec_Invalidate(t *testing.T) {
 					PipelineTaskName: "bar",
 					SidecarOverrides: []v1beta1.TaskRunSidecarOverride{{
 						Name: "task-1",
-						Resources: corev1.ResourceRequirements{
-							Requests: corev1.ResourceList{corev1.ResourceMemory: corev1resources.MustParse("1Gi")},
+						Resources: v1beta1.ResourceRequirements{
+							Requests: v1beta1.ResourceList{corev1.ResourceMemory: "1Gi"},
 						}},
 					},
 				},
@@ -603,8 +602,8 @@ func TestPipelineRunSpec_Invalidate(t *testing.T) {
 				{
 					PipelineTaskName: "bar",
 					StepOverrides: []v1beta1.TaskRunStepOverride{{
-						Resources: corev1.ResourceRequirements{
-							Requests: corev1.ResourceList{corev1.ResourceMemory: corev1resources.MustParse("1Gi")},
+						Resources: v1beta1.ResourceRequirements{
+							Requests: v1beta1.ResourceList{corev1.ResourceMemory: "1Gi"},
 						}},
 					},
 				},
@@ -635,8 +634,8 @@ func TestPipelineRunSpec_Invalidate(t *testing.T) {
 				{
 					PipelineTaskName: "bar",
 					SidecarOverrides: []v1beta1.TaskRunSidecarOverride{{
-						Resources: corev1.ResourceRequirements{
-							Requests: corev1.ResourceList{corev1.ResourceMemory: corev1resources.MustParse("1Gi")},
+						Resources: v1beta1.ResourceRequirements{
+							Requests: v1beta1.ResourceList{corev1.ResourceMemory: "1Gi"},
 						}},
 					},
 				},

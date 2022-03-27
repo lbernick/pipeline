@@ -235,7 +235,7 @@ type TaskRunStepOverride struct {
 	// The name of the Step to override.
 	Name string
 	// The resource requirements to apply to the Step.
-	Resources corev1.ResourceRequirements
+	Resources ResourceRequirements
 }
 
 // TaskRunSidecarOverride is used to override the values of a Sidecar in the corresponding Task.
@@ -243,7 +243,7 @@ type TaskRunSidecarOverride struct {
 	// The name of the Sidecar to override.
 	Name string
 	// The resource requirements to apply to the Sidecar.
-	Resources corev1.ResourceRequirements
+	Resources ResourceRequirements
 }
 
 // GetGroupVersionKind implements kmeta.OwnerRefable.

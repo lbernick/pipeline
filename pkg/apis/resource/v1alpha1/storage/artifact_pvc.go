@@ -50,7 +50,7 @@ func (p *ArtifactPVC) StorageBasePath(pr *v1beta1.PipelineRun) string {
 
 // GetCopyFromStorageToSteps returns a container used to download artifacts from temporary storage.
 func (p *ArtifactPVC) GetCopyFromStorageToSteps(name, sourcePath, destinationPath string) []v1beta1.Step {
-	return []v1beta1.Step{{Container: corev1.Container{
+	return []v1beta1.Step{{Container: v1beta1.Container{
 		Name:    names.SimpleNameGenerator.RestrictLengthWithRandomSuffix(fmt.Sprintf("source-copy-%s", name)),
 		Image:   p.ShellImage,
 		Command: []string{"cp", "-r", fmt.Sprintf("%s/.", sourcePath), destinationPath},
@@ -63,12 +63,12 @@ func (p *ArtifactPVC) GetCopyFromStorageToSteps(name, sourcePath, destinationPat
 
 // GetCopyToStorageFromSteps returns a container used to upload artifacts for temporary storage.
 func (p *ArtifactPVC) GetCopyToStorageFromSteps(name, sourcePath, destinationPath string) []v1beta1.Step {
-	return []v1beta1.Step{{Container: corev1.Container{
+	return []v1beta1.Step{{Container: v1beta1.Container{
 		Name:         names.SimpleNameGenerator.RestrictLengthWithRandomSuffix(fmt.Sprintf("source-mkdir-%s", name)),
 		Image:        p.ShellImage,
 		Command:      []string{"mkdir", "-p", destinationPath},
 		VolumeMounts: []corev1.VolumeMount{GetPvcMount(p.Name)},
-	}}, {Container: corev1.Container{
+	}}, {Container: v1beta1.Container{
 		Name:         names.SimpleNameGenerator.RestrictLengthWithRandomSuffix(fmt.Sprintf("source-copy-%s", name)),
 		Image:        p.ShellImage,
 		Command:      []string{"cp", "-r", fmt.Sprintf("%s/.", sourcePath), destinationPath},

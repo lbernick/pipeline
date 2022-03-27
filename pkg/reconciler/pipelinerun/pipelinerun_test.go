@@ -4222,7 +4222,7 @@ func TestReconcileWithConditionChecks(t *testing.T) {
 			},
 			Spec: v1alpha1.ConditionSpec{
 				Check: v1alpha1.Step{
-					Container: corev1.Container{
+					Container: v1beta1.Container{
 						Image: "foo",
 						Args:  []string{"bar"},
 					},
@@ -4240,7 +4240,7 @@ func TestReconcileWithConditionChecks(t *testing.T) {
 			},
 			Spec: v1alpha1.ConditionSpec{
 				Check: v1alpha1.Step{
-					Container: corev1.Container{
+					Container: v1beta1.Container{
 						Image: "foo",
 						Args:  []string{"bar"},
 					},
@@ -4329,7 +4329,7 @@ func TestReconcileWithFailingConditionChecks(t *testing.T) {
 		},
 		Spec: v1alpha1.ConditionSpec{
 			Check: v1alpha1.Step{
-				Container: corev1.Container{
+				Container: v1beta1.Container{
 					Image: "foo",
 					Args:  []string{"bar"},
 				},
@@ -4534,7 +4534,7 @@ func makeExpectedTr(condName, ccName string, labels, annotations map[string]stri
 		Spec: v1beta1.TaskRunSpec{
 			TaskSpec: &v1beta1.TaskSpec{
 				Steps: []v1beta1.Step{{
-					Container: corev1.Container{
+					Container: v1beta1.Container{
 						Name:  "condition-check-" + condName,
 						Image: "foo",
 						Args:  []string{"bar"},
@@ -6340,7 +6340,7 @@ func TestReconcileOutOfSyncPipelineRun(t *testing.T) {
 		},
 		Spec: v1alpha1.ConditionSpec{
 			Check: v1alpha1.Step{
-				Container: corev1.Container{
+				Container: v1beta1.Container{
 					Image: "foo",
 					Args:  []string{"bar"},
 				},
@@ -6496,7 +6496,7 @@ func TestUpdatePipelineRunStatusFromInformer(t *testing.T) {
 					Name: "unit-test-task-spec",
 					TaskSpec: &v1beta1.EmbeddedTask{
 						TaskSpec: v1beta1.TaskSpec{
-							Steps: []v1beta1.Step{{Container: corev1.Container{
+							Steps: []v1beta1.Step{{Container: v1beta1.Container{
 								Name:  "mystep",
 								Image: "myimage"}}},
 						},
@@ -8144,7 +8144,7 @@ func TestReconcile_OptionalWorkspacesOmitted(t *testing.T) {
 							Optional: true,
 						}},
 						Steps: []v1beta1.Step{{
-							Container: corev1.Container{
+							Container: v1beta1.Container{
 								Image: "foo:latest",
 							},
 						}},
@@ -8201,7 +8201,7 @@ func TestReconcile_OptionalWorkspacesOmitted(t *testing.T) {
 					Optional: true,
 				}},
 				Steps: []v1beta1.Step{{
-					Container: corev1.Container{
+					Container: v1beta1.Container{
 						Image: "foo:latest",
 					},
 				}},
@@ -8249,7 +8249,7 @@ func TestReconcile_DependencyValidationsImmediatelyFailPipelineRun(t *testing.T)
 					Name: "pt0",
 					TaskSpec: &v1beta1.EmbeddedTask{TaskSpec: v1beta1.TaskSpec{
 						Steps: []v1beta1.Step{{
-							Container: corev1.Container{
+							Container: v1beta1.Container{
 								Image: "foo:latest",
 							},
 						}},
@@ -8265,7 +8265,7 @@ func TestReconcile_DependencyValidationsImmediatelyFailPipelineRun(t *testing.T)
 							Name: "p",
 						}},
 						Steps: []v1beta1.Step{{
-							Container: corev1.Container{
+							Container: v1beta1.Container{
 								Image: "foo:latest",
 							},
 						}},
@@ -8285,7 +8285,7 @@ func TestReconcile_DependencyValidationsImmediatelyFailPipelineRun(t *testing.T)
 					Name: "pt0",
 					TaskSpec: &v1beta1.EmbeddedTask{TaskSpec: v1beta1.TaskSpec{
 						Steps: []v1beta1.Step{{
-							Container: corev1.Container{
+							Container: v1beta1.Container{
 								Image: "foo:latest",
 							},
 						}},
@@ -8294,7 +8294,7 @@ func TestReconcile_DependencyValidationsImmediatelyFailPipelineRun(t *testing.T)
 					Name: "pt1",
 					TaskSpec: &v1beta1.EmbeddedTask{TaskSpec: v1beta1.TaskSpec{
 						Steps: []v1beta1.Step{{
-							Container: corev1.Container{
+							Container: v1beta1.Container{
 								Image: "foo:latest",
 							},
 						}},
@@ -8330,7 +8330,7 @@ func TestReconcile_DependencyValidationsImmediatelyFailPipelineRun(t *testing.T)
 							Optional: false,
 						}},
 						Steps: []v1beta1.Step{{
-							Container: corev1.Container{
+							Container: v1beta1.Container{
 								Image: "foo:latest",
 							},
 						}},
@@ -8389,7 +8389,7 @@ func getTaskRunWithTaskSpec(tr, pr, p, t string, labels, annotations map[string]
 		Spec: v1beta1.TaskRunSpec{
 			TaskSpec: &v1beta1.TaskSpec{
 				Steps: []v1beta1.Step{{
-					Container: corev1.Container{
+					Container: v1beta1.Container{
 						Name:  "mystep",
 						Image: "myimage",
 					},

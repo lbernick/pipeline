@@ -121,7 +121,7 @@ func (s *GCSResource) GetOutputTaskModifier(ts *v1beta1.TaskSpec, path string) (
 
 	envVars = append(envVars, corev1.EnvVar{Name: "HOME", Value: pipeline.HomeDir})
 
-	step := v1beta1.Step{Container: corev1.Container{
+	step := v1beta1.Step{Container: v1beta1.Container{
 		Name:         names.SimpleNameGenerator.RestrictLengthWithRandomSuffix(fmt.Sprintf("upload-%s", s.Name)),
 		Image:        s.GsutilImage,
 		Command:      []string{"gsutil"},
@@ -156,7 +156,7 @@ func (s *GCSResource) GetInputTaskModifier(ts *v1beta1.TaskSpec, path string) (v
 		CreateDirStep(s.ShellImage, s.Name, path),
 		{
 			Script: script,
-			Container: corev1.Container{
+			Container: v1beta1.Container{
 				Name:         names.SimpleNameGenerator.RestrictLengthWithRandomSuffix(fmt.Sprintf("fetch-%s", s.Name)),
 				Image:        s.GsutilImage,
 				Env:          envVars,

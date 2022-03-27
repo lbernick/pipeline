@@ -35,7 +35,7 @@ func TestApplyStepReplacements(t *testing.T) {
 
 	s := v1beta1.Step{
 		Script: "$(replace.me)",
-		Container: corev1.Container{
+		Container: v1beta1.Container{
 			Name:       "$(replace.me)",
 			Image:      "$(replace.me)",
 			Command:    []string{"$(array.replace.me)"},
@@ -81,7 +81,7 @@ func TestApplyStepReplacements(t *testing.T) {
 
 	expected := v1beta1.Step{
 		Script: "replaced!",
-		Container: corev1.Container{
+		Container: v1beta1.Container{
 			Name:       "replaced!",
 			Image:      "replaced!",
 			Command:    []string{"val1", "val2"},

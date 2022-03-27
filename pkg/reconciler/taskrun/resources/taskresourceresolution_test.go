@@ -22,7 +22,6 @@ import (
 
 	"github.com/tektoncd/pipeline/pkg/apis/pipeline/v1beta1"
 	resourcev1alpha1 "github.com/tektoncd/pipeline/pkg/apis/resource/v1alpha1"
-	corev1 "k8s.io/api/core/v1"
 	kerrors "k8s.io/apimachinery/pkg/api/errors"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 )
@@ -77,7 +76,7 @@ func TestResolveTaskRun(t *testing.T) {
 	taskName := "orchestrate"
 	kind := v1beta1.NamespacedTaskKind
 	taskSpec := v1beta1.TaskSpec{
-		Steps: []v1beta1.Step{{Container: corev1.Container{
+		Steps: []v1beta1.Step{{Container: v1beta1.Container{
 			Name: "step1",
 		}},
 		}}
@@ -207,7 +206,7 @@ func TestResolveTaskRun_missingInput(t *testing.T) {
 
 func TestResolveTaskRun_noResources(t *testing.T) {
 	taskSpec := v1beta1.TaskSpec{
-		Steps: []v1beta1.Step{{Container: corev1.Container{
+		Steps: []v1beta1.Step{{Container: v1beta1.Container{
 			Name: "step1",
 		}},
 		}}

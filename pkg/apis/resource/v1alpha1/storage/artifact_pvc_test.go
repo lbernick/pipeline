@@ -35,7 +35,7 @@ func TestPVCGetCopyFromContainerSpec(t *testing.T) {
 		Name:       "pipelinerun-pvc",
 		ShellImage: "busybox",
 	}
-	want := []v1beta1.Step{{Container: corev1.Container{
+	want := []v1beta1.Step{{Container: v1beta1.Container{
 		Name:  "source-copy-workspace-9l9zj",
 		Image: "busybox",
 
@@ -56,12 +56,12 @@ func TestPVCGetCopyToContainerSpec(t *testing.T) {
 		Name:       "pipelinerun-pvc",
 		ShellImage: "busybox",
 	}
-	want := []v1beta1.Step{{Container: corev1.Container{
+	want := []v1beta1.Step{{Container: v1beta1.Container{
 		Name:         "source-mkdir-workspace-9l9zj",
 		Image:        "busybox",
 		Command:      []string{"mkdir", "-p", "/workspace/destination"},
 		VolumeMounts: []corev1.VolumeMount{{MountPath: "/pvc", Name: "pipelinerun-pvc"}},
-	}}, {Container: corev1.Container{
+	}}, {Container: v1beta1.Container{
 		Name:         "source-copy-workspace-mz4c7",
 		Image:        "busybox",
 		Command:      []string{"cp", "-r", "src-path/.", "/workspace/destination"},
@@ -93,7 +93,7 @@ func TestPVCGetPvcMount(t *testing.T) {
 func TestPVCGetMakeStep(t *testing.T) {
 	names.TestingSeed()
 
-	want := v1beta1.Step{Container: corev1.Container{
+	want := v1beta1.Step{Container: v1beta1.Container{
 		Name:    "create-dir-workspace-9l9zj",
 		Image:   "busybox",
 		Command: []string{"mkdir", "-p", "/workspace/destination"},

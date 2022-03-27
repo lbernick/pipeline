@@ -187,7 +187,7 @@ func (s *Resource) GetInputTaskModifier(_ *v1beta1.TaskSpec, path string) (v1bet
 	}
 
 	step := v1beta1.Step{
-		Container: corev1.Container{
+		Container: v1beta1.Container{
 			Name:       names.SimpleNameGenerator.RestrictLengthWithRandomSuffix(gitSource + "-" + s.Name),
 			Image:      s.GitImage,
 			Command:    []string{"/ko-app/git-init"},
