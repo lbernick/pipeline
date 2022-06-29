@@ -75,7 +75,8 @@ func (ts *TaskRunSpec) Validate(ctx context.Context) (errs *apis.FieldError) {
 	}
 	if ts.ComputeResources != nil {
 		errs = errs.Also(version.ValidateEnabledAPIFields(ctx, "computeResources", config.AlphaAPIFields).ViaField("computeResources"))
-		errs = errs.Also(validateTaskRunComputeResources(ts.ComputeResources, ts.StepOverrides))
+		errs = errs.Also(validateStepComputeResources(ts.ComputeResources, ts.TaskSpec))
+		errs = errs.Also(validateStepOverridesComputeResources(ts.ComputeResources, ts.StepOverrides))
 	}
 
 	if ts.Status != "" {
@@ -91,6 +92,22 @@ func (ts *TaskRunSpec) Validate(ctx context.Context) (errs *apis.FieldError) {
 	}
 
 	return errs
+}
+
+// validateStepComputeResources validates compute resources are not configured in TaskRunSpec.Step
+func validateStepComputeResources(computeResources *corev1.ResourceRequirements, taskSpec *TaskSpec) (errs *apis.FieldError) {
+	if taskSpec == nil {
+		return nil
+	}
+	for _, step := range taskSpec.Steps {
+		if step.Resources.Limits != nil || step.Resources.Requests != nil {
+			return apis.ErrMultipleOneOf(
+				"step.resources",
+				"computeResources",
+			)
+		}
+	}
+	return nil
 }
 
 // validateDebug
@@ -145,10 +162,10 @@ func validateStepOverrides(overrides []TaskRunStepOverride) (errs *apis.FieldErr
 	return errs
 }
 
-// validateTaskRunComputeResources ensures that compute resources are not configured at both the step level and the task level
-func validateTaskRunComputeResources(computeResources *corev1.ResourceRequirements, overrides []TaskRunStepOverride) (errs *apis.FieldError) {
+// validateStepOverridesComputeResources validates compute resources are not configured in TaskRunSpec.StepOverrides
+func validateStepOverridesComputeResources(computeResources *corev1.ResourceRequirements, overrides []TaskRunStepOverride) (errs *apis.FieldError) {
 	for _, override := range overrides {
-		if override.Resources.Size() != 0 && computeResources != nil {
+		if override.Resources.Limits != nil || override.Resources.Requests != nil {
 			return apis.ErrMultipleOneOf(
 				"stepOverrides.resources",
 				"computeResources",
