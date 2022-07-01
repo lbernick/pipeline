@@ -28,11 +28,16 @@ import (
 
 type TektonV1Interface interface {
 	RESTClient() rest.Interface
+	ClusterTasksGetter
 }
 
 // TektonV1Client is used to interact with features provided by the tekton.dev group.
 type TektonV1Client struct {
 	restClient rest.Interface
+}
+
+func (c *TektonV1Client) ClusterTasks() ClusterTaskInterface {
+	return newClusterTasks(c)
 }
 
 // NewForConfig creates a new TektonV1Client for the given config.
