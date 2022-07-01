@@ -25,6 +25,7 @@ import (
 	"github.com/aws/aws-sdk-go-v2/aws"
 	"github.com/aws/aws-sdk-go-v2/service/ecr"
 	"github.com/aws/aws-sdk-go-v2/service/ecrpublic"
+	"github.com/pkg/errors"
 	"github.com/sirupsen/logrus"
 
 	"github.com/awslabs/amazon-ecr-credential-helper/ecr-login/cache"
@@ -226,7 +227,7 @@ func (c *defaultClient) getAuthorizationToken(registryID string) (*Auth, error) 
 				err = fmt.Errorf("missing AuthorizationData in ECR response for %s", registryID)
 			}
 		}
-		return nil, fmt.Errorf("ecr: Failed to get authorization token: %w", err)
+		return nil, errors.Wrap(err, "ecr: Failed to get authorization token")
 	}
 
 	for _, authData := range output.AuthorizationData {
@@ -261,7 +262,7 @@ func (c *defaultClient) getPublicAuthorizationToken() (*Auth, error) {
 
 	output, err := c.ecrPublicClient.GetAuthorizationToken(context.TODO(), input)
 	if err != nil {
-		return nil, fmt.Errorf("ecr: failed to get authorization token: %w", err)
+		return nil, errors.Wrap(err, "ecr: failed to get authorization token")
 	}
 	if output == nil || output.AuthorizationData == nil {
 		return nil, fmt.Errorf("ecr: missing AuthorizationData in ECR Public response")
@@ -285,7 +286,7 @@ func (c *defaultClient) getPublicAuthorizationToken() (*Auth, error) {
 func extractToken(token string, proxyEndpoint string) (*Auth, error) {
 	decodedToken, err := base64.StdEncoding.DecodeString(token)
 	if err != nil {
-		return nil, fmt.Errorf("invalid token: %w", err)
+		return nil, errors.Wrap(err, "invalid token")
 	}
 
 	parts := strings.SplitN(string(decodedToken), ":", 2)
