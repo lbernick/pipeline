@@ -28,6 +28,7 @@ import (
 	"github.com/tektoncd/pipeline/pkg/apis/pipeline"
 	"github.com/tektoncd/pipeline/pkg/apis/pipeline/pod"
 	"github.com/tektoncd/pipeline/pkg/apis/pipeline/v1beta1"
+	"github.com/tektoncd/pipeline/pkg/internal/computeresources"
 	"github.com/tektoncd/pipeline/pkg/names"
 	corev1 "k8s.io/api/core/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
@@ -270,6 +271,9 @@ func (b *Builder) Build(ctx context.Context, taskRun *v1beta1.TaskRun, taskSpec 
 	if err := v1beta1.ValidateVolumes(volumes); err != nil {
 		return nil, err
 	}
+
+	stepComputeResources := computeresources.GetStepComputeResources(taskRun, taskSpec, corev1.LimitRange{} /* FIXME */)
+	// Apply stepComputeResources to step containers
 
 	mergedPodContainers := stepContainers
 
