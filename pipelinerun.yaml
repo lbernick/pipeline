@@ -1,0 +1,15 @@
+apiVersion: tekton.dev/v1beta1
+kind: PipelineRun
+metadata:
+  name: testme
+  labels:
+    tekton.dev/concurrency: foobar
+spec:
+  status: PipelineRunPending
+  pipelineSpec:
+    tasks:
+    - name: foo
+      taskSpec:
+        steps:
+        - image: busybox
+          script: "echo hello"

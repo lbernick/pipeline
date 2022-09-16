@@ -38,7 +38,7 @@ import (
 	"knative.dev/pkg/apis"
 )
 
-var cancelTaskRunPatchBytes, cancelRunPatchBytes, cancelPipelineRunPatchBytes []byte
+var cancelTaskRunPatchBytes, cancelRunPatchBytes, cancelPipelineRunPatchBytes, startPipelineRunPatchBytes []byte
 
 func init() {
 	var err error
@@ -79,6 +79,14 @@ func init() {
 	if err != nil {
 		log.Fatalf("failed to marshal PipelineRun cancel patch bytes: %v", err)
 	}
+	startPipelineRunPatchBytes, err = json.Marshal([]jsonpatch.JsonPatchOperation{
+		{
+			Operation: "remove",
+			Path:      "/spec/status",
+		}})
+	if err != nil {
+		log.Fatalf("failed to marshal PipelineRun start patch bytes: %v", err)
+	}
 }
 
 func cancelRun(ctx context.Context, runName string, namespace string, clientSet clientset.Interface) error {
@@ -103,6 +111,20 @@ func cancelTaskRun(ctx context.Context, taskRunName string, namespace string, cl
 
 func (r *Reconciler) cancelOtherPipelineRunViaAPI(ctx context.Context, namespace, name string) error {
 	_, err := r.PipelineClientSet.TektonV1beta1().PipelineRuns(namespace).Patch(ctx, name, types.JSONPatchType, cancelPipelineRunPatchBytes, metav1.PatchOptions{})
+	return err
+}
+
+/*
+func (r *Reconciler) startPipelineRunViaAPI(ctx context.Context, namespace, name string) error {
+	//_, err := r.PipelineClientSet.TektonV1beta1().PipelineRuns(namespace).Patch(ctx, name, types.JSONPatchType, startPipelineRunPatchBytes, metav1.PatchOptions{})
+
+
+	return err
+} */
+
+func (r *Reconciler) startPipelineRunViaAPI(ctx context.Context, pr *v1beta1.PipelineRun) error {
+	pr.Spec.Status = ""
+	_, err := r.PipelineClientSet.TektonV1beta1().PipelineRuns(pr.Namespace).Update(ctx, pr, metav1.UpdateOptions{})
 	return err
 }
 

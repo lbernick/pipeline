@@ -363,8 +363,13 @@ func (c *Reconciler) reconcile(ctx context.Context, pr *v1beta1.PipelineRun, get
 	c.handleConcurrencyControls(ctx, pr)
 
 	if pr.IsPending() {
-		pr.Status.MarkRunning(ReasonPending, fmt.Sprintf("PipelineRun %q is pending", pr.Name))
-		return nil
+		_, ok := pr.Labels["tekton.dev/concurrency"]
+		if !ok {
+			pr.Status.MarkRunning(ReasonPending, fmt.Sprintf("PipelineRun %q is pending", pr.Name))
+			return nil
+		}
+		err := c.startPipelineRunViaAPI(ctx, pr)
+		return err
 	}
 
 	pipelineMeta, pipelineSpec, err := rprp.GetPipelineData(ctx, pr, getPipelineFunc)
