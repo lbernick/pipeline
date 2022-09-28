@@ -17,6 +17,7 @@ limitations under the License.
 package main
 
 import (
+	"io/fs"
 	"io/ioutil"
 	"os"
 	"strings"
@@ -25,6 +26,12 @@ import (
 )
 
 const testWaitPollingInterval = 10 * time.Millisecond
+
+type fakeFileInfo struct{}
+
+func (f fakeFileInfo) Name() string      { return "filename" }
+func (f fakeFileInfo) Size() int64       { return 0 }
+func (f fakeFileInfo) Mode() fs.FileMode { return fs.ModeAppend }
 
 func TestRealWaiterWaitMissingFile(t *testing.T) {
 	// Create a temp file and then immediately delete it to get

@@ -114,7 +114,15 @@ func (e Entrypointer) Go() error {
 	}()
 
 	for _, f := range e.WaitFiles {
-		if err := e.Waiter.Wait(f, e.WaitFileContent, e.BreakpointOnFailure); err != nil {
+		if f == "" {
+			continue
+		}
+		handle, err := os.Open(f)
+		if err != nil {
+			return err
+		}
+		defer handle.Close()
+		if err := e.Waiter.Wait(handle, e.WaitFileContent, e.BreakpointOnFailure); err != nil {
 			// An error happened while waiting, so we bail
 			// *but* we write postfile to make next steps bail too.
 			// In case of breakpoint on failure do not write post file.
