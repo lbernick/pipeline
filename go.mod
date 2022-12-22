@@ -6,7 +6,7 @@ require (
 	github.com/Microsoft/go-winio v0.6.0 // indirect
 	github.com/ahmetb/gen-crd-api-reference-docs v0.3.1-0.20220720053627-e327d0730470 // Waiting for https://github.com/ahmetb/gen-crd-api-reference-docs/pull/43/files to merge
 	github.com/cloudevents/sdk-go/v2 v2.12.0
-	github.com/containerd/containerd v1.6.12
+	github.com/containerd/containerd v1.6.14
 	github.com/go-git/go-git/v5 v5.4.2
 	github.com/google/go-cmp v0.5.9
 	github.com/google/go-containerregistry v0.12.1
@@ -166,7 +166,7 @@ require (
 	golang.org/x/crypto v0.4.0
 	golang.org/x/mod v0.6.0 // indirect
 	golang.org/x/net v0.3.0 // indirect
-	golang.org/x/sync v0.1.0 // indirect
+	golang.org/x/sync v0.1.0
 	golang.org/x/sys v0.3.0 // indirect
 	golang.org/x/term v0.3.0 // indirect
 	golang.org/x/text v0.5.0 // indirect
