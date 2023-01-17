@@ -39,6 +39,7 @@ import (
 	resolutionutil "github.com/tektoncd/pipeline/pkg/internal/resolution"
 	"github.com/tektoncd/pipeline/pkg/reconciler/events/cloudevent"
 	"github.com/tektoncd/pipeline/pkg/reconciler/events/k8sevent"
+	"github.com/tektoncd/pipeline/pkg/reconciler/pipelinerun/cancel"
 	"github.com/tektoncd/pipeline/pkg/reconciler/pipelinerun/resources"
 	ttesting "github.com/tektoncd/pipeline/pkg/reconciler/testing"
 	"github.com/tektoncd/pipeline/pkg/reconciler/volumeclaim"
@@ -1713,7 +1714,7 @@ func runTestReconcileOnCancelledPipelineRun(t *testing.T, embeddedStatus string)
 		{
 			name:       "cancelled",
 			specStatus: v1beta1.PipelineRunSpecStatusCancelled,
-			reason:     ReasonCancelled,
+			reason:     cancel.ReasonCancelled,
 		},
 	}
 
@@ -3115,8 +3116,8 @@ spec:
 				ConfigMaps:   cms,
 			}
 
-			testAssets, cancel := getPipelineRunController(t, d)
-			defer cancel()
+			testAssets, cleanup := getPipelineRunController(t, d)
+			defer cleanup()
 			c := testAssets.Controller
 			clients := testAssets.Clients
 			failingReactorActivated := true
@@ -3144,7 +3145,7 @@ spec:
 			}
 
 			// The PipelineRun should not be cancelled b/c we couldn't cancel the TaskRun
-			checkPipelineRunConditionStatusAndReason(t, reconciledRun, corev1.ConditionUnknown, ReasonCouldntCancel)
+			checkPipelineRunConditionStatusAndReason(t, reconciledRun, corev1.ConditionUnknown, cancel.ReasonCouldntCancel)
 			// The event here is "Normal" because in case we fail to cancel we leave the condition to unknown
 			// Further reconcile might converge then the status of the pipeline.
 			// See https://github.com/tektoncd/pipeline/issues/2647 for further details.
@@ -10941,7 +10942,7 @@ spec:
 				}
 			}
 
-			err := cancelPipelineRun(prt.TestAssets.Ctx, logtesting.TestLogger(t), pr, clients.Pipeline)
+			err := cancel.CancelAndFinishPipelineRun(prt.TestAssets.Ctx, pr, clients.Pipeline, "cancelation reason")
 			if err != nil {
 				t.Fatalf("Error found: %v", err)
 			}

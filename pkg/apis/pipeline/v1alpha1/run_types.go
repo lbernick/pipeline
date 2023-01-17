@@ -96,14 +96,14 @@ const (
 )
 
 // RunSpecStatusMessage defines human readable status messages for the TaskRun.
-type RunSpecStatusMessage string
+type RunSpecStatusMessage = v1beta1.TaskRunSpecStatusMessage
 
 const (
 	// RunCancelledByPipelineMsg indicates that the PipelineRun of which part this Run was
 	// has been cancelled.
-	RunCancelledByPipelineMsg RunSpecStatusMessage = "Run cancelled as the PipelineRun it belongs to has been cancelled."
+	RunCancelledByPipelineMsg RunSpecStatusMessage = v1beta1.TaskRunCancelledByPipelineMsg
 	// RunCancelledByPipelineTimeoutMsg indicates that the Run was cancelled because the PipelineRun running it timed out.
-	RunCancelledByPipelineTimeoutMsg RunSpecStatusMessage = "Run cancelled as the PipelineRun it belongs to has timed out."
+	RunCancelledByPipelineTimeoutMsg RunSpecStatusMessage = v1beta1.TaskRunCancelledByPipelineTimeoutMsg
 )
 
 // GetParam gets the Param from the RunSpec with the given name

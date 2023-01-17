@@ -14,22 +14,20 @@ See the License for the specific language governing permissions and
 limitations under the License.
 */
 
-package pipelinerun
+package cancel
 
 import (
 	"context"
 	"encoding/json"
 	"fmt"
-	"log"
 	"strings"
 	"time"
 
 	"github.com/tektoncd/pipeline/pkg/apis/config"
 	"github.com/tektoncd/pipeline/pkg/apis/pipeline"
-	"github.com/tektoncd/pipeline/pkg/apis/pipeline/v1alpha1"
 	"github.com/tektoncd/pipeline/pkg/apis/pipeline/v1beta1"
 	clientset "github.com/tektoncd/pipeline/pkg/client/clientset/versioned"
-	"go.uber.org/zap"
+	"github.com/tektoncd/pipeline/pkg/pipelinerunmetrics"
 	jsonpatch "gomodules.xyz/jsonpatch/v2"
 	corev1 "k8s.io/api/core/v1"
 	"k8s.io/apimachinery/pkg/api/errors"
@@ -37,58 +35,19 @@ import (
 	"k8s.io/apimachinery/pkg/types"
 	"k8s.io/apimachinery/pkg/util/sets"
 	"knative.dev/pkg/apis"
+	"knative.dev/pkg/logging"
 )
 
-var cancelTaskRunPatchBytes, cancelCustomRunPatchBytes, cancelRunPatchBytes []byte
+const (
+	// ReasonCouldntCancel indicates that a PipelineRun was cancelled but attempting to update
+	// all of the running TaskRuns as cancelled failed.
+	ReasonCouldntCancel = "PipelineRunCouldntCancel"
+	// ReasonCancelled indicates that a PipelineRun was cancelled.
+	ReasonCancelled = pipelinerunmetrics.ReasonCancelled
+)
 
-func init() {
-	var err error
-	cancelTaskRunPatchBytes, err = json.Marshal([]jsonpatch.JsonPatchOperation{
-		{
-			Operation: "add",
-			Path:      "/spec/status",
-			Value:     v1beta1.TaskRunSpecStatusCancelled,
-		},
-		{
-			Operation: "add",
-			Path:      "/spec/statusMessage",
-			Value:     v1beta1.TaskRunCancelledByPipelineMsg,
-		}})
-	if err != nil {
-		log.Fatalf("failed to marshal TaskRun cancel patch bytes: %v", err)
-	}
-	cancelCustomRunPatchBytes, err = json.Marshal([]jsonpatch.JsonPatchOperation{
-		{
-			Operation: "add",
-			Path:      "/spec/status",
-			Value:     v1beta1.CustomRunSpecStatusCancelled,
-		},
-		{
-			Operation: "add",
-			Path:      "/spec/statusMessage",
-			Value:     v1beta1.CustomRunCancelledByPipelineMsg,
-		}})
-	if err != nil {
-		log.Fatalf("failed to marshal CustomRun cancel patch bytes: %v", err)
-	}
-	cancelRunPatchBytes, err = json.Marshal([]jsonpatch.JsonPatchOperation{
-		{
-			Operation: "add",
-			Path:      "/spec/status",
-			Value:     v1alpha1.RunSpecStatusCancelled,
-		},
-		{
-			Operation: "add",
-			Path:      "/spec/statusMessage",
-			Value:     v1alpha1.RunCancelledByPipelineMsg,
-		}})
-	if err != nil {
-		log.Fatalf("failed to marshal Run cancel patch bytes: %v", err)
-	}
-}
-
-func cancelCustomRun(ctx context.Context, runName string, namespace string, clientSet clientset.Interface) error {
-	_, err := clientSet.TektonV1beta1().CustomRuns(namespace).Patch(ctx, runName, types.JSONPatchType, cancelCustomRunPatchBytes, metav1.PatchOptions{}, "")
+func cancelCustomRun(ctx context.Context, runName string, namespace string, clientSet clientset.Interface, patchBytes []byte) error {
+	_, err := clientSet.TektonV1beta1().CustomRuns(namespace).Patch(ctx, runName, types.JSONPatchType, patchBytes, metav1.PatchOptions{}, "")
 	if errors.IsNotFound(err) {
 		// The resource may have been deleted in the meanwhile, but we should
 		// still be able to cancel the PipelineRun
@@ -97,8 +56,8 @@ func cancelCustomRun(ctx context.Context, runName string, namespace string, clie
 	return err
 }
 
-func cancelRun(ctx context.Context, runName string, namespace string, clientSet clientset.Interface) error {
-	_, err := clientSet.TektonV1alpha1().Runs(namespace).Patch(ctx, runName, types.JSONPatchType, cancelRunPatchBytes, metav1.PatchOptions{}, "")
+func cancelRun(ctx context.Context, runName string, namespace string, clientSet clientset.Interface, patchBytes []byte) error {
+	_, err := clientSet.TektonV1alpha1().Runs(namespace).Patch(ctx, runName, types.JSONPatchType, patchBytes, metav1.PatchOptions{}, "")
 	if errors.IsNotFound(err) {
 		// The resource may have been deleted in the meanwhile, but we should
 		// still be able to cancel the PipelineRun
@@ -107,8 +66,8 @@ func cancelRun(ctx context.Context, runName string, namespace string, clientSet 
 	return err
 }
 
-func cancelTaskRun(ctx context.Context, taskRunName string, namespace string, clientSet clientset.Interface) error {
-	_, err := clientSet.TektonV1beta1().TaskRuns(namespace).Patch(ctx, taskRunName, types.JSONPatchType, cancelTaskRunPatchBytes, metav1.PatchOptions{}, "")
+func cancelTaskRun(ctx context.Context, taskRunName string, namespace string, clientSet clientset.Interface, patchBytes []byte) error {
+	_, err := clientSet.TektonV1beta1().TaskRuns(namespace).Patch(ctx, taskRunName, types.JSONPatchType, patchBytes, metav1.PatchOptions{}, "")
 	if errors.IsNotFound(err) {
 		// The resource may have been deleted in the meanwhile, but we should
 		// still be able to cancel the PipelineRun
@@ -117,9 +76,10 @@ func cancelTaskRun(ctx context.Context, taskRunName string, namespace string, cl
 	return err
 }
 
-// cancelPipelineRun marks the PipelineRun as cancelled and any resolved TaskRun(s) too.
-func cancelPipelineRun(ctx context.Context, logger *zap.SugaredLogger, pr *v1beta1.PipelineRun, clientSet clientset.Interface) error {
-	errs := cancelPipelineTaskRuns(ctx, logger, pr, clientSet)
+// CancelAndFinishPipelineRun marks the PipelineRun as cancelled and any resolved TaskRun(s) too.
+// TODO better docstring
+func CancelAndFinishPipelineRun(ctx context.Context, pr *v1beta1.PipelineRun, clientSet clientset.Interface, reason string) error {
+	errs := CancelPipelineTaskRuns(ctx, pr, clientSet, reason)
 
 	// If we successfully cancelled all the TaskRuns and Runs, we can consider the PipelineRun cancelled.
 	if len(errs) == 0 {
@@ -147,14 +107,22 @@ func cancelPipelineRun(ctx context.Context, logger *zap.SugaredLogger, pr *v1bet
 	return nil
 }
 
-// cancelPipelineTaskRuns patches `TaskRun` and `Run` with canceled status
-func cancelPipelineTaskRuns(ctx context.Context, logger *zap.SugaredLogger, pr *v1beta1.PipelineRun, clientSet clientset.Interface) []string {
-	return cancelPipelineTaskRunsForTaskNames(ctx, logger, pr, clientSet, sets.NewString())
+// CancelPipelineTaskRuns patches `TaskRun` and `Run` with canceled status
+// TODO: docstring
+// TODO: get rid of set of tasknames
+func CancelPipelineTaskRuns(ctx context.Context, pr *v1beta1.PipelineRun, clientSet clientset.Interface, reason string) []string {
+	return cancelPipelineTaskRunsForTaskNames(ctx, pr, clientSet, sets.NewString(), reason)
 }
 
+// TODO: remove as a separate function
 // cancelPipelineTaskRunsForTaskNames patches `TaskRun`s and `Run`s for the given task names, or all if no task names are given, with canceled status
-func cancelPipelineTaskRunsForTaskNames(ctx context.Context, logger *zap.SugaredLogger, pr *v1beta1.PipelineRun, clientSet clientset.Interface, taskNames sets.String) []string {
+func cancelPipelineTaskRunsForTaskNames(ctx context.Context, pr *v1beta1.PipelineRun, clientSet clientset.Interface, taskNames sets.String, reason string) []string {
 	errs := []string{}
+	logger := logging.FromContext(ctx)
+	patchBytes, err := getPatchBytes(ctx, reason)
+	if err != nil {
+		return []string{err.Error()}
+	}
 
 	trNames, customRunNames, runNames, err := getChildObjectsFromPRStatusForTaskNames(ctx, pr.Status, taskNames)
 	if err != nil {
@@ -164,8 +132,8 @@ func cancelPipelineTaskRunsForTaskNames(ctx context.Context, logger *zap.Sugared
 	for _, taskRunName := range trNames {
 		logger.Infof("cancelling TaskRun %s", taskRunName)
 
-		if err := cancelTaskRun(ctx, taskRunName, pr.Namespace, clientSet); err != nil {
-			errs = append(errs, fmt.Errorf("Failed to patch TaskRun `%s` with cancellation: %s", taskRunName, err).Error())
+		if err := cancelTaskRun(ctx, taskRunName, pr.Namespace, clientSet, patchBytes); err != nil {
+			errs = append(errs, fmt.Errorf("failed to patch TaskRun `%s` with cancellation: %s", taskRunName, err).Error())
 			continue
 		}
 	}
@@ -173,8 +141,8 @@ func cancelPipelineTaskRunsForTaskNames(ctx context.Context, logger *zap.Sugared
 	for _, runName := range customRunNames {
 		logger.Infof("cancelling CustomRun %s", runName)
 
-		if err := cancelCustomRun(ctx, runName, pr.Namespace, clientSet); err != nil {
-			errs = append(errs, fmt.Errorf("Failed to patch CustomRun `%s` with cancellation: %s", runName, err).Error())
+		if err := cancelCustomRun(ctx, runName, pr.Namespace, clientSet, patchBytes); err != nil {
+			errs = append(errs, fmt.Errorf("failed to patch CustomRun `%s` with cancellation: %s", runName, err).Error())
 			continue
 		}
 	}
@@ -182,8 +150,8 @@ func cancelPipelineTaskRunsForTaskNames(ctx context.Context, logger *zap.Sugared
 	for _, runName := range runNames {
 		logger.Infof("cancelling Run %s", runName)
 
-		if err := cancelRun(ctx, runName, pr.Namespace, clientSet); err != nil {
-			errs = append(errs, fmt.Errorf("Failed to patch Run `%s` with cancellation: %s", runName, err).Error())
+		if err := cancelRun(ctx, runName, pr.Namespace, clientSet, patchBytes); err != nil {
+			errs = append(errs, fmt.Errorf("failed to patch Run `%s` with cancellation: %s", runName, err).Error())
 			continue
 		}
 	}
@@ -241,9 +209,10 @@ func getChildObjectsFromPRStatusForTaskNames(ctx context.Context, prs v1beta1.Pi
 	return trNames, customRunNames, runNames, err
 }
 
-// gracefullyCancelPipelineRun marks any non-final resolved TaskRun(s) as cancelled and runs finally.
-func gracefullyCancelPipelineRun(ctx context.Context, logger *zap.SugaredLogger, pr *v1beta1.PipelineRun, clientSet clientset.Interface) error {
-	errs := cancelPipelineTaskRuns(ctx, logger, pr, clientSet)
+// CancelPipelineRun marks any non-final resolved TaskRun(s) as cancelled and runs finally.
+// TODO better docstring
+func CancelPipelineRun(ctx context.Context, pr *v1beta1.PipelineRun, clientSet clientset.Interface, reason string) error {
+	errs := CancelPipelineTaskRuns(ctx, pr, clientSet, reason)
 
 	// If we successfully cancelled all the TaskRuns and Runs, we can proceed with the PipelineRun reconciliation to trigger finally.
 	if len(errs) > 0 {
@@ -258,4 +227,20 @@ func gracefullyCancelPipelineRun(ctx context.Context, logger *zap.SugaredLogger,
 		return fmt.Errorf("error(s) from cancelling TaskRun(s) from PipelineRun %s: %s", pr.Name, e)
 	}
 	return nil
+}
+
+func getPatchBytes(ctx context.Context, reason string) ([]byte, error) {
+	// Because the reason is a string, JSON marshalling should not fail,
+	// and the controller should not panic.
+	return json.Marshal([]jsonpatch.JsonPatchOperation{
+		{
+			Operation: "add",
+			Path:      "/spec/status",
+			Value:     v1beta1.CustomRunSpecStatusCancelled,
+		},
+		{
+			Operation: "add",
+			Path:      "/spec/statusMessage",
+			Value:     reason,
+		}})
 }

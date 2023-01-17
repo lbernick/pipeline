@@ -46,6 +46,7 @@ import (
 	"github.com/tektoncd/pipeline/pkg/reconciler/events"
 	"github.com/tektoncd/pipeline/pkg/reconciler/events/cloudevent"
 	"github.com/tektoncd/pipeline/pkg/reconciler/pipeline/dag"
+	"github.com/tektoncd/pipeline/pkg/reconciler/pipelinerun/cancel"
 	rprp "github.com/tektoncd/pipeline/pkg/reconciler/pipelinerun/pipelinespec"
 	"github.com/tektoncd/pipeline/pkg/reconciler/pipelinerun/resources"
 	"github.com/tektoncd/pipeline/pkg/reconciler/taskrun"
@@ -108,13 +109,8 @@ const (
 	// ReasonInvalidGraph indicates that the reason for the failure status is that the
 	// associated Pipeline is an invalid graph (a.k.a wrong order, cycle, …)
 	ReasonInvalidGraph = "PipelineInvalidGraph"
-	// ReasonCancelled indicates that a PipelineRun was cancelled.
-	ReasonCancelled = pipelinerunmetrics.ReasonCancelled
 	// ReasonPending indicates that a PipelineRun is pending.
 	ReasonPending = "PipelineRunPending"
-	// ReasonCouldntCancel indicates that a PipelineRun was cancelled but attempting to update
-	// all of the running TaskRuns as cancelled failed.
-	ReasonCouldntCancel = "PipelineRunCouldntCancel"
 	// ReasonCouldntTimeOut indicates that a PipelineRun was timed out but attempting to update
 	// all of the running TaskRuns as timed out failed.
 	ReasonCouldntTimeOut = "PipelineRunCouldntTimeOut"
@@ -222,7 +218,7 @@ func (c *Reconciler) ReconcileKind(ctx context.Context, pr *v1beta1.PipelineRun)
 
 	// If the pipelinerun is cancelled, cancel tasks and update status
 	if pr.IsCancelled() {
-		err := cancelPipelineRun(ctx, logger, pr, c.PipelineClientSet)
+		err := cancel.CancelAndFinishPipelineRun(ctx, logger, pr, c.PipelineClientSet)
 		return c.finishReconcileUpdateEmitEvents(ctx, pr, before, err)
 	}
 
@@ -590,7 +586,7 @@ func (c *Reconciler) reconcile(ctx context.Context, pr *v1beta1.PipelineRun, get
 	// check if pipeline run is not gracefully cancelled and there are active task runs, which require cancelling
 	if pr.IsGracefullyCancelled() && pipelineRunFacts.IsRunning() {
 		// If the pipelinerun is cancelled, cancel tasks, but run finally
-		err := gracefullyCancelPipelineRun(ctx, logger, pr, c.PipelineClientSet)
+		err := cancel.CancelPipelineRun(ctx, pr, c.PipelineClientSet, v1beta1.TaskRunReasonCancelled.String())
 		if err != nil {
 			// failed to cancel tasks, maybe retry would help (don't return permanent error)
 			return err

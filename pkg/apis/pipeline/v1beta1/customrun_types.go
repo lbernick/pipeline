@@ -92,14 +92,14 @@ const (
 )
 
 // CustomRunSpecStatusMessage defines human readable status messages for the TaskRun.
-type CustomRunSpecStatusMessage string
+type CustomRunSpecStatusMessage = TaskRunSpecStatusMessage
 
 const (
 	// CustomRunCancelledByPipelineMsg indicates that the PipelineRun of which part this CustomRun was
 	// has been cancelled.
-	CustomRunCancelledByPipelineMsg CustomRunSpecStatusMessage = "CustomRun cancelled as the PipelineRun it belongs to has been cancelled."
+	CustomRunCancelledByPipelineMsg CustomRunSpecStatusMessage = TaskRunCancelledByPipelineMsg
 	// CustomRunCancelledByPipelineTimeoutMsg indicates that the Run was cancelled because the PipelineRun running it timed out.
-	CustomRunCancelledByPipelineTimeoutMsg CustomRunSpecStatusMessage = "CustomRun cancelled as the PipelineRun it belongs to has timed out."
+	CustomRunCancelledByPipelineTimeoutMsg CustomRunSpecStatusMessage = TaskRunCancelledByPipelineTimeoutMsg
 )
 
 // GetParam gets the Param from the CustomRunSpec with the given name

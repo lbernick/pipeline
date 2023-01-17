@@ -287,7 +287,7 @@ func TestTimeoutPipelineRun(t *testing.T) {
 			defer cancel()
 			c, _ := test.SeedTestData(t, ctx, d)
 
-			err := timeoutPipelineRun(ctx, logtesting.TestLogger(t), tc.pipelineRun, c.Pipeline)
+			err := timeoutPipelineRun(ctx, tc.pipelineRun, c.Pipeline)
 			if tc.wantErr {
 				if err == nil {
 					t.Error("expected an error, but did not get one")

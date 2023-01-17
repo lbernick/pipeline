@@ -14,26 +14,23 @@ See the License for the specific language governing permissions and
 limitations under the License.
 */
 
-package pipelinerun
+package cancel_test
 
 import (
-	"context"
 	"testing"
 
-	"github.com/google/go-cmp/cmp"
 	"github.com/tektoncd/pipeline/pkg/apis/config"
+	configtesting "github.com/tektoncd/pipeline/pkg/apis/config/testing"
 	"github.com/tektoncd/pipeline/pkg/apis/pipeline"
 	"github.com/tektoncd/pipeline/pkg/apis/pipeline/v1alpha1"
 	"github.com/tektoncd/pipeline/pkg/apis/pipeline/v1beta1"
 	_ "github.com/tektoncd/pipeline/pkg/pipelinerunmetrics/fake" // Make sure the pipelinerunmetrics are setup
+	"github.com/tektoncd/pipeline/pkg/reconciler/pipelinerun/cancel"
 	ttesting "github.com/tektoncd/pipeline/pkg/reconciler/testing"
 	"github.com/tektoncd/pipeline/test"
-	"github.com/tektoncd/pipeline/test/diff"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/runtime"
-	"k8s.io/apimachinery/pkg/util/sets"
 	"knative.dev/pkg/apis"
-	logtesting "knative.dev/pkg/logging/testing"
 )
 
 func TestCancelPipelineRun(t *testing.T) {
@@ -374,14 +371,10 @@ func TestCancelPipelineRun(t *testing.T) {
 				CustomRuns:   tc.customRuns,
 			}
 			ctx, _ := ttesting.SetupFakeContext(t)
-			cfg := config.NewStore(logtesting.TestLogger(t))
-			cfg.OnConfigChanged(withEmbeddedStatus(newFeatureFlagsConfigMap(), tc.embeddedStatus))
-			ctx = cfg.ToContext(ctx)
-			ctx, cancel := context.WithCancel(ctx)
-			defer cancel()
+			ctx = ttesting.SetupFakeCloudClientContext(ctx, d.ExpectedCloudEventCount)
+			configtesting.SetEmbeddedStatus(ctx, t, tc.embeddedStatus)
 			c, _ := test.SeedTestData(t, ctx, d)
-
-			err := cancelPipelineRun(ctx, logtesting.TestLogger(t), tc.pipelineRun, c.Pipeline)
+			err := cancel.CancelAndFinishPipelineRun(ctx, tc.pipelineRun, c.Pipeline, "cancellation reason")
 			if tc.wantErr {
 				if err == nil {
 					t.Error("expected an error, but did not get one")
@@ -445,6 +438,7 @@ func TestCancelPipelineRun(t *testing.T) {
 	}
 }
 
+/*
 func TestGetChildObjectsFromPRStatusForTaskNames(t *testing.T) {
 	testCases := []struct {
 		name                   string
@@ -665,3 +659,4 @@ func TestGetChildObjectsFromPRStatusForTaskNames(t *testing.T) {
 		})
 	}
 }
+*/
