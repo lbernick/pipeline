@@ -73,14 +73,6 @@ type CloudClient struct {
 	client client.Client
 }
 
-// AddCount does nothing
-func (c CloudClient) addCount() {
-}
-
-// DecreaseCount does nothing
-func (c CloudClient) decreaseCount() {
-}
-
 // Send invokes call client.Send
 func (c CloudClient) Send(ctx context.Context, event cloudevents.Event) protocol.Result {
 	return c.client.Send(ctx, event)

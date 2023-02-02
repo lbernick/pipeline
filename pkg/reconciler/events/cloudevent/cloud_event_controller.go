@@ -103,16 +103,16 @@ func SendCloudEventWithRetries(ctx context.Context, object runtime.Object) error
 	}
 
 	wasIn := make(chan error)
-
-	ceClient.addCount()
 	go func() {
-		defer ceClient.decreaseCount()
 		wasIn <- nil
 		logger.Debugf("Sending cloudevent of type %q", event.Type())
 		// In case of Run event, check cache if cloudevent is already sent
 		if isRun || isCustomRun {
 			cloudEventSent, err := cache.ContainsOrAddCloudEvent(cacheClient, event)
 			if err != nil {
+				// TODO: For tests that expect 0 events (or where the event is already present in the cache),
+				// testing does not wait on this goroutine to finish
+				// and there's a data race when writing to the test logger.
 				logger.Errorf("error while checking cache: %s", err)
 			}
 			if cloudEventSent {
@@ -120,6 +120,7 @@ func SendCloudEventWithRetries(ctx context.Context, object runtime.Object) error
 				return
 			}
 		}
+
 		if result := ceClient.Send(cloudevents.ContextWithRetriesExponentialBackoff(ctx, 10*time.Millisecond, 10), *event); !cloudevents.IsACK(result) {
 			logger.Warnf("Failed to send cloudevent: %s", result.Error())
 			recorder := controller.GetEventRecorder(ctx)
