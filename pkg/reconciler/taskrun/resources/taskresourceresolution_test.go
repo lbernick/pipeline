@@ -59,9 +59,9 @@ func TestResolveTaskRun(t *testing.T) {
 		},
 	}, {
 		PipelineResourceBinding: v1beta1.PipelineResourceBinding{
-			Name: "gitspecToUse",
+			Name: "storage-output-to-use",
 			ResourceSpec: &resourcev1alpha1.PipelineResourceSpec{
-				Type: resourcev1alpha1.PipelineResourceTypeGit,
+				Type: resourcev1alpha1.PipelineResourceTypeStorage,
 			},
 		},
 	}}
@@ -143,8 +143,8 @@ func TestResolveTaskRun(t *testing.T) {
 		r, ok = rtr.Outputs["gitspecToUse"]
 		if !ok {
 			t.Errorf("Expected value present in map for `gitspecToUse' but it was missing")
-		} else if r.Spec.Type != resourcev1alpha1.PipelineResourceTypeGit {
-			t.Errorf("Expected to use resource type `git` for but got %s", r.Spec.Type)
+		} else if r.Spec.Type != resourcev1alpha1.PipelineResourceTypeStorage {
+			t.Errorf("Expected to use resource type `storage` for but got %s", r.Spec.Type)
 		}
 	} else {
 		t.Errorf("Expected 2 resolved outputs but instead had: %v", rtr.Outputs)
@@ -231,7 +231,7 @@ func TestResolveTaskRun_InvalidBothSpecified(t *testing.T) {
 				Name: "git-repo",
 			},
 			ResourceSpec: &resourcev1alpha1.PipelineResourceSpec{
-				Type: resourcev1alpha1.PipelineResourceTypeGit,
+				Type: resourcev1alpha1.PipelineResourceTypeStorage,
 			},
 		},
 	}}
@@ -288,7 +288,7 @@ func TestGetResourceFromBinding_Ref(t *testing.T) {
 func TestGetResourceFromBinding_Spec(t *testing.T) {
 	binding := v1beta1.PipelineResourceBinding{
 		ResourceSpec: &resourcev1alpha1.PipelineResourceSpec{
-			Type: resourcev1alpha1.PipelineResourceTypeGit,
+			Type: resourcev1alpha1.PipelineResourceTypeStorage,
 			Params: []resourcev1alpha1.ResourceParam{{
 				Name:  "url",
 				Value: "github.com/mycoolorg/mycoolrepo",
@@ -303,7 +303,7 @@ func TestGetResourceFromBinding_Spec(t *testing.T) {
 	if err != nil {
 		t.Fatalf("Did not expect error trying to get resource from binding: %s", err)
 	}
-	if rr.Spec.Type != resourcev1alpha1.PipelineResourceTypeGit {
+	if rr.Spec.Type != resourcev1alpha1.PipelineResourceTypeStorage {
 		t.Errorf("Got %s instead of expected resource type", rr.Spec.Type)
 	}
 	if len(rr.Spec.Params) != 1 || rr.Spec.Params[0].Name != "url" || rr.Spec.Params[0].Value != "github.com/mycoolorg/mycoolrepo" {
@@ -326,7 +326,7 @@ func TestGetResourceFromBinding_NoNameOrSpec(t *testing.T) {
 func TestGetResourceFromBinding_NameAndSpec(t *testing.T) {
 	binding := v1beta1.PipelineResourceBinding{
 		ResourceSpec: &resourcev1alpha1.PipelineResourceSpec{
-			Type: resourcev1alpha1.PipelineResourceTypeGit,
+			Type: resourcev1alpha1.PipelineResourceTypeStorage,
 			Params: []resourcev1alpha1.ResourceParam{{
 				Name:  "url",
 				Value: "github.com/mycoolorg/mycoolrepo",

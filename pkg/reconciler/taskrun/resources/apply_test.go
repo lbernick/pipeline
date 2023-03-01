@@ -658,25 +658,12 @@ var (
 	}
 
 	inputs = map[string]v1beta1.PipelineResourceInterface{
-		"workspace": gitResource,
+		"workspace": gcsResource,
 	}
 
 	outputs = map[string]v1beta1.PipelineResourceInterface{
 		"bucket": gcsResource,
 	}
-
-	gitResource, _ = resource.FromType("git-resource", &resourcev1alpha1.PipelineResource{
-		ObjectMeta: metav1.ObjectMeta{
-			Name: "git-resource",
-		},
-		Spec: resourcev1alpha1.PipelineResourceSpec{
-			Type: resourcev1alpha1.PipelineResourceTypeGit,
-			Params: []resourcev1alpha1.ResourceParam{{
-				Name:  "URL",
-				Value: "https://git-repo",
-			}},
-		},
-	}, images)
 
 	gcsResource, _ = resource.FromType("gcs-resource", &resourcev1alpha1.PipelineResource{
 		ObjectMeta: metav1.ObjectMeta{

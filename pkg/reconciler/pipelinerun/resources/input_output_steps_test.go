@@ -44,7 +44,7 @@ func TestGetOutputSteps(t *testing.T) {
 	}
 	r3 := &resourcev1alpha1.PipelineResource{
 		Spec: resourcev1alpha1.PipelineResourceSpec{
-			Type: resourcev1alpha1.PipelineResourceTypeGit,
+			Type: resourcev1alpha1.PipelineResourceTypeStorage,
 			Params: []resourcev1alpha1.ResourceParam{{
 				Name:  "url",
 				Value: "https://github.com/tektoncd/pipeline.git",
@@ -139,7 +139,7 @@ func TestGetInputSteps(t *testing.T) {
 	}
 	r2 := &resourcev1alpha1.PipelineResource{
 		Spec: resourcev1alpha1.PipelineResourceSpec{
-			Type: resourcev1alpha1.PipelineResourceTypeGit,
+			Type: resourcev1alpha1.PipelineResourceTypeStorage,
 			Params: []resourcev1alpha1.ResourceParam{{
 				Name:  "url",
 				Value: "https://github.com/tektoncd/pipeline.git",
@@ -280,7 +280,7 @@ func TestWrapSteps(t *testing.T) {
 	}
 	r2 := &resourcev1alpha1.PipelineResource{
 		Spec: resourcev1alpha1.PipelineResourceSpec{
-			Type: resourcev1alpha1.PipelineResourceTypeGit,
+			Type: resourcev1alpha1.PipelineResourceTypeStorage,
 			Params: []resourcev1alpha1.ResourceParam{{
 				Name:  "url",
 				Value: "https://github.com/tektoncd/pipeline.git",

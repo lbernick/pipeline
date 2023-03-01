@@ -660,9 +660,9 @@ func TestPipelineSpec_Validate_Failure(t *testing.T) {
 		name: "invalid pipeline with pipeline task having reference to resources which does not exist",
 		ps: &PipelineSpec{
 			Resources: []PipelineDeclaredResource{{
-				Name: "great-resource", Type: PipelineResourceTypeGit,
+				Name: "great-resource", Type: PipelineResourceTypeStorage,
 			}, {
-				Name: "wonderful-resource", Type: PipelineResourceTypeGit,
+				Name: "wonderful-resource", Type: PipelineResourceTypeStorage,
 			}},
 			Tasks: []PipelineTask{{
 				Name:    "bar",
@@ -693,7 +693,7 @@ func TestPipelineSpec_Validate_Failure(t *testing.T) {
 		name: "invalid pipeline spec - from referring to a pipeline task which does not exist",
 		ps: &PipelineSpec{
 			Resources: []PipelineDeclaredResource{{
-				Name: "great-resource", Type: PipelineResourceTypeGit,
+				Name: "great-resource", Type: PipelineResourceTypeStorage,
 			}},
 			Tasks: []PipelineTask{{
 				Name: "baz", TaskRef: &TaskRef{Name: "baz-task"},
@@ -953,9 +953,9 @@ func TestValidateDeclaredResources_Success(t *testing.T) {
 	}{{
 		name: "valid resource declarations and usage",
 		resources: []PipelineDeclaredResource{{
-			Name: "great-resource", Type: PipelineResourceTypeGit,
+			Name: "great-resource", Type: PipelineResourceTypeStorage,
 		}, {
-			Name: "wonderful-resource", Type: PipelineResourceTypeGit,
+			Name: "wonderful-resource", Type: PipelineResourceTypeStorage,
 		}},
 		tasks: []PipelineTask{{
 			Name:    "bar",
@@ -980,13 +980,13 @@ func TestValidateDeclaredResources_Success(t *testing.T) {
 	}, {
 		name: "valid resource declarations with extra resources, not used in any pipeline task",
 		resources: []PipelineDeclaredResource{{
-			Name: "great-resource", Type: PipelineResourceTypeGit,
+			Name: "great-resource", Type: PipelineResourceTypeStorage,
 		}, {
-			Name: "awesome-resource", Type: PipelineResourceTypeGit,
+			Name: "awesome-resource", Type: PipelineResourceTypeStorage,
 		}, {
-			Name: "yet-another-great-resource", Type: PipelineResourceTypeGit,
+			Name: "yet-another-great-resource", Type: PipelineResourceTypeStorage,
 		}, {
-			Name: "yet-another-awesome-resource", Type: PipelineResourceTypeGit,
+			Name: "yet-another-awesome-resource", Type: PipelineResourceTypeStorage,
 		}},
 		tasks: []PipelineTask{{
 			Name:    "foo",
@@ -1020,9 +1020,9 @@ func TestValidateDeclaredResources_Failure(t *testing.T) {
 	}{{
 		name: "duplicate resource declaration - resource declarations must be unique",
 		resources: []PipelineDeclaredResource{{
-			Name: "duplicate-resource", Type: PipelineResourceTypeGit,
+			Name: "duplicate-resource", Type: PipelineResourceTypeStorage,
 		}, {
-			Name: "duplicate-resource", Type: PipelineResourceTypeGit,
+			Name: "duplicate-resource", Type: PipelineResourceTypeStorage,
 		}},
 		tasks: []PipelineTask{{
 			Name:    "foo",
@@ -1040,7 +1040,7 @@ func TestValidateDeclaredResources_Failure(t *testing.T) {
 	}, {
 		name: "output resource is missing from resource declarations",
 		resources: []PipelineDeclaredResource{{
-			Name: "great-resource", Type: PipelineResourceTypeGit,
+			Name: "great-resource", Type: PipelineResourceTypeStorage,
 		}},
 		tasks: []PipelineTask{{
 			Name:    "foo",
@@ -1061,7 +1061,7 @@ func TestValidateDeclaredResources_Failure(t *testing.T) {
 	}, {
 		name: "input resource is missing from resource declarations",
 		resources: []PipelineDeclaredResource{{
-			Name: "great-resource", Type: PipelineResourceTypeGit,
+			Name: "great-resource", Type: PipelineResourceTypeStorage,
 		}},
 		tasks: []PipelineTask{{
 			Name:    "foo",
@@ -2378,9 +2378,9 @@ func TestValidatePipelineWithFinalTasks_Success(t *testing.T) {
 			ObjectMeta: metav1.ObjectMeta{Name: "pipeline"},
 			Spec: PipelineSpec{
 				Resources: []PipelineDeclaredResource{{
-					Name: "great-resource", Type: PipelineResourceTypeGit,
+					Name: "great-resource", Type: PipelineResourceTypeStorage,
 				}, {
-					Name: "wonderful-resource", Type: PipelineResourceTypeGit,
+					Name: "wonderful-resource", Type: PipelineResourceTypeStorage,
 				}},
 				Tasks: []PipelineTask{{
 					Name:    "non-final-task",

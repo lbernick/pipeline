@@ -29,7 +29,6 @@ var (
 	// AllowedOutputResources are the resource types that can be used as outputs
 	AllowedOutputResources = map[PipelineResourceType]bool{
 		PipelineResourceTypeStorage: true,
-		PipelineResourceTypeGit:     true,
 	}
 )
 

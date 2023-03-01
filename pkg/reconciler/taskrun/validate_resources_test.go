@@ -48,14 +48,14 @@ func TestValidateResolvedTaskResources_ValidResources(t *testing.T) {
 					{
 						ResourceDeclaration: v1beta1.ResourceDeclaration{
 							Name:     "resource-to-build",
-							Type:     resourcev1alpha1.PipelineResourceTypeGit,
+							Type:     resourcev1alpha1.PipelineResourceTypeStorage,
 							Optional: false,
 						},
 					},
 					{
 						ResourceDeclaration: v1beta1.ResourceDeclaration{
 							Name:     "optional-resource-to-build",
-							Type:     resourcev1alpha1.PipelineResourceTypeGit,
+							Type:     resourcev1alpha1.PipelineResourceTypeStorage,
 							Optional: true,
 						},
 					},
@@ -64,14 +64,14 @@ func TestValidateResolvedTaskResources_ValidResources(t *testing.T) {
 					{
 						ResourceDeclaration: v1beta1.ResourceDeclaration{
 							Name:     "resource-to-provide",
-							Type:     resourcev1alpha1.PipelineResourceTypeGit,
+							Type:     resourcev1alpha1.PipelineResourceTypeStorage,
 							Optional: false,
 						},
 					},
 					{
 						ResourceDeclaration: v1beta1.ResourceDeclaration{
 							Name:     "optional-resource-to-provide",
-							Type:     resourcev1alpha1.PipelineResourceTypeGit,
+							Type:     resourcev1alpha1.PipelineResourceTypeStorage,
 							Optional: true,
 						},
 					},
@@ -85,7 +85,7 @@ func TestValidateResolvedTaskResources_ValidResources(t *testing.T) {
 			"resource-to-build": {
 				ObjectMeta: metav1.ObjectMeta{Name: "example-resource"},
 				Spec: resourcev1alpha1.PipelineResourceSpec{
-					Type: resourcev1alpha1.PipelineResourceTypeGit,
+					Type: resourcev1alpha1.PipelineResourceTypeStorage,
 					Params: []v1beta1.ResourceParam{{
 						Name:  "foo",
 						Value: "bar",
@@ -95,7 +95,7 @@ func TestValidateResolvedTaskResources_ValidResources(t *testing.T) {
 			"optional-resource-to-build": {
 				ObjectMeta: metav1.ObjectMeta{Name: "example-resource"},
 				Spec: resourcev1alpha1.PipelineResourceSpec{
-					Type: resourcev1alpha1.PipelineResourceTypeGit,
+					Type: resourcev1alpha1.PipelineResourceTypeStorage,
 					Params: []v1beta1.ResourceParam{{
 						Name:  "foo",
 						Value: "bar",
@@ -107,13 +107,13 @@ func TestValidateResolvedTaskResources_ValidResources(t *testing.T) {
 			"resource-to-provide": {
 				ObjectMeta: metav1.ObjectMeta{Name: "example-image"},
 				Spec: resourcev1alpha1.PipelineResourceSpec{
-					Type: resourcev1alpha1.PipelineResourceTypeGit,
+					Type: resourcev1alpha1.PipelineResourceTypeStorage,
 				},
 			},
 			"optional-resource-to-provide": {
 				ObjectMeta: metav1.ObjectMeta{Name: "example-image"},
 				Spec: resourcev1alpha1.PipelineResourceSpec{
-					Type: resourcev1alpha1.PipelineResourceTypeGit,
+					Type: resourcev1alpha1.PipelineResourceTypeStorage,
 				},
 			},
 		},
@@ -346,7 +346,7 @@ func TestValidateResolvedTaskResources_InvalidResources(t *testing.T) {
 	r := &resourcev1alpha1.PipelineResource{
 		ObjectMeta: metav1.ObjectMeta{Name: "git-test-resource"},
 		Spec: resourcev1alpha1.PipelineResourceSpec{
-			Type: resourcev1alpha1.PipelineResourceTypeGit,
+			Type: resourcev1alpha1.PipelineResourceTypeStorage,
 			Params: []resourcev1alpha1.ResourceParam{{
 				Name:  "foo",
 				Value: "bar",
@@ -360,7 +360,7 @@ func TestValidateResolvedTaskResources_InvalidResources(t *testing.T) {
 				Inputs: []v1beta1.TaskResource{{
 					ResourceDeclaration: v1beta1.ResourceDeclaration{
 						Name: "testinput",
-						Type: resourcev1alpha1.PipelineResourceTypeGit,
+						Type: resourcev1alpha1.PipelineResourceTypeStorage,
 					},
 				}},
 			},
@@ -373,7 +373,7 @@ func TestValidateResolvedTaskResources_InvalidResources(t *testing.T) {
 				Inputs: []v1beta1.TaskResource{{
 					ResourceDeclaration: v1beta1.ResourceDeclaration{
 						Name:     "requiredgitinput",
-						Type:     resourcev1alpha1.PipelineResourceTypeGit,
+						Type:     resourcev1alpha1.PipelineResourceTypeStorage,
 						Optional: false,
 					},
 				}},
@@ -387,7 +387,7 @@ func TestValidateResolvedTaskResources_InvalidResources(t *testing.T) {
 				Outputs: []v1beta1.TaskResource{{
 					ResourceDeclaration: v1beta1.ResourceDeclaration{
 						Name: "testoutput",
-						Type: resourcev1alpha1.PipelineResourceTypeGit,
+						Type: resourcev1alpha1.PipelineResourceTypeStorage,
 					},
 				}},
 			},
@@ -400,7 +400,7 @@ func TestValidateResolvedTaskResources_InvalidResources(t *testing.T) {
 				Outputs: []v1beta1.TaskResource{{
 					ResourceDeclaration: v1beta1.ResourceDeclaration{
 						Name:     "requiredgitoutput",
-						Type:     resourcev1alpha1.PipelineResourceTypeGit,
+						Type:     resourcev1alpha1.PipelineResourceTypeStorage,
 						Optional: false,
 					},
 				}},
@@ -414,14 +414,14 @@ func TestValidateResolvedTaskResources_InvalidResources(t *testing.T) {
 				Inputs: []v1beta1.TaskResource{{
 					ResourceDeclaration: v1beta1.ResourceDeclaration{
 						Name:     "requiredgitinput",
-						Type:     resourcev1alpha1.PipelineResourceTypeGit,
+						Type:     resourcev1alpha1.PipelineResourceTypeStorage,
 						Optional: false,
 					},
 				}},
 				Outputs: []v1beta1.TaskResource{{
 					ResourceDeclaration: v1beta1.ResourceDeclaration{
 						Name:     "requiredgitoutput",
-						Type:     resourcev1alpha1.PipelineResourceTypeGit,
+						Type:     resourcev1alpha1.PipelineResourceTypeStorage,
 						Optional: false,
 					},
 				}},
