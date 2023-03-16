@@ -7,7 +7,7 @@ weight: 304
 
 # Pipeline Controller Metrics
 
-The following pipeline metrics are available at `controller-service` on port `9090`.
+The following pipeline metrics are available at `tekton-pipelines-controller` service in the `tekton-pipelines` namespace on port `9090`.
 
 We expose several kinds of exporters, including Prometheus, Google Stackdriver, and many others. You can set them up using [observability configuration](../config/config-observability.yaml).
 
@@ -54,6 +54,8 @@ Following values are available in the configmap:
 | metrics.pipelinerun.duration-type | `histogram` | `tekton_pipelines_controller_pipelinerun_duration_seconds` is of type gauge or lastvalue |
 
 Histogram value isn't available when pipelinerun or taskrun labels are selected. The Lastvalue or Gauge will be provided.
+
+## Viewing metrics locally
 
 To check that appropriate values have been applied in response to configmap changes, use the following commands:
 ```shell
