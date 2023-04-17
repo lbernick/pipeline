@@ -25,6 +25,7 @@ import (
 	"github.com/tektoncd/pipeline/pkg/apis/pipeline"
 	"github.com/tektoncd/pipeline/pkg/apis/pipeline/pod"
 	"github.com/tektoncd/pipeline/pkg/apis/pipeline/v1beta1"
+	"github.com/tektoncd/pipeline/pkg/internal/affinityassistant"
 	"github.com/tektoncd/pipeline/pkg/reconciler/volumeclaim"
 	"github.com/tektoncd/pipeline/pkg/workspace"
 	appsv1 "k8s.io/api/apps/v1"
@@ -41,26 +42,24 @@ const (
 	// ReasonCouldntCreateAffinityAssistantStatefulSet indicates that a PipelineRun uses workspaces with PersistentVolumeClaim
 	// as a volume source and expect an Assistant StatefulSet, but couldn't create a StatefulSet.
 	ReasonCouldntCreateAffinityAssistantStatefulSet = "CouldntCreateAffinityAssistantStatefulSet"
-
-	featureFlagDisableAffinityAssistantKey = "disable-affinity-assistant"
 )
 
-// createAffinityAssistants creates an Affinity Assistant StatefulSet for every workspace in the PipelineRun that
+// createAffinityAssistantsPerWorkspace creates an Affinity Assistant StatefulSet for every workspace in the PipelineRun that
 // use a PersistentVolumeClaim volume. This is done to achieve Node Affinity for all TaskRuns that
 // share the workspace volume and make it possible for the tasks to execute parallel while sharing volume.
-func (c *Reconciler) createAffinityAssistants(ctx context.Context, wb []v1beta1.WorkspaceBinding, pr *v1beta1.PipelineRun, namespace string) error {
+func (c *Reconciler) createAffinityAssistantsPerWorkspace(ctx context.Context, wb []v1beta1.WorkspaceBinding, pr *v1beta1.PipelineRun, namespace string) error {
 	logger := logging.FromContext(ctx)
 	cfg := config.FromContextOrDefaults(ctx)
 
 	var errs []error
 	for _, w := range wb {
 		if w.PersistentVolumeClaim != nil || w.VolumeClaimTemplate != nil {
-			affinityAssistantName := getAffinityAssistantName(w.Name, pr.Name)
+			affinityAssistantName := getPerWorkspaceAffinityAssistantName(w.Name, pr.Name)
 			_, err := c.KubeClientSet.AppsV1().StatefulSets(namespace).Get(ctx, affinityAssistantName, metav1.GetOptions{})
-			claimName := getClaimName(w, *kmeta.NewControllerRef(pr))
+			claimName := getPerWorkspaceClaimName(w, *kmeta.NewControllerRef(pr))
 			switch {
 			case apierrors.IsNotFound(err):
-				affinityAssistantStatefulSet := affinityAssistantStatefulSet(affinityAssistantName, pr, claimName, c.Images.NopImage, cfg.Defaults.DefaultAAPodTemplate)
+				affinityAssistantStatefulSet := affinityAssistantStatefulSet(affinityAssistantName, pr, []string{claimName}, c.Images.NopImage, cfg.Defaults.DefaultAAPodTemplate)
 				_, err := c.KubeClientSet.AppsV1().StatefulSets(namespace).Create(ctx, affinityAssistantStatefulSet, metav1.CreateOptions{})
 				if err != nil {
 					errs = append(errs, fmt.Errorf("failed to create StatefulSet %s: %w", affinityAssistantName, err))
@@ -76,7 +75,38 @@ func (c *Reconciler) createAffinityAssistants(ctx context.Context, wb []v1beta1.
 	return errorutils.NewAggregate(errs)
 }
 
-func getClaimName(w v1beta1.WorkspaceBinding, ownerReference metav1.OwnerReference) string {
+// createAffinityAssistantsPerPipelineRun TODO
+func (c *Reconciler) createAffinityAssistantsPerPipelineRun(ctx context.Context, wb []v1beta1.WorkspaceBinding, pr *v1beta1.PipelineRun, namespace string) error {
+	logger := logging.FromContext(ctx)
+	cfg := config.FromContextOrDefaults(ctx)
+	affinityAssistantName := getPerPipelineRunAffinityAssistantName(pr.Name)
+	_, err := c.KubeClientSet.AppsV1().StatefulSets(namespace).Get(ctx, affinityAssistantName, metav1.GetOptions{})
+	var claimNames []string
+	for _, w := range wb {
+		if w.PersistentVolumeClaim != nil || w.VolumeClaimTemplate != nil {
+			claimName := getPerWorkspaceClaimName(w, *kmeta.NewControllerRef(pr))
+			claimNames = append(claimNames, claimName)
+		}
+	}
+	var errs []error
+	switch {
+	case apierrors.IsNotFound(err):
+		affinityAssistantStatefulSet := affinityAssistantStatefulSet(affinityAssistantName, pr, claimNames, c.Images.NopImage, cfg.Defaults.DefaultAAPodTemplate)
+		_, err := c.KubeClientSet.AppsV1().StatefulSets(namespace).Create(ctx, affinityAssistantStatefulSet, metav1.CreateOptions{})
+		if err != nil {
+			errs = append(errs, fmt.Errorf("failed to create StatefulSet %s: %w", affinityAssistantName, err))
+		}
+		if err == nil {
+			logger.Infof("Created StatefulSet %s in namespace %s", affinityAssistantName, namespace)
+		}
+	case err != nil:
+		errs = append(errs, fmt.Errorf("failed to retrieve StatefulSet %s: %w", affinityAssistantName, err))
+	}
+
+	return errorutils.NewAggregate(errs)
+}
+
+func getPerWorkspaceClaimName(w v1beta1.WorkspaceBinding, ownerReference metav1.OwnerReference) string {
 	if w.PersistentVolumeClaim != nil {
 		return w.PersistentVolumeClaim.ClaimName
 	} else if w.VolumeClaimTemplate != nil {
@@ -88,24 +118,40 @@ func getClaimName(w v1beta1.WorkspaceBinding, ownerReference metav1.OwnerReferen
 
 func (c *Reconciler) cleanupAffinityAssistants(ctx context.Context, pr *v1beta1.PipelineRun) error {
 	// omit cleanup if the feature is disabled
-	if c.isAffinityAssistantDisabled(ctx) {
+	affinityAssistantBehavior := affinityassistant.GetAffinityAssistantBehavior(ctx)
+	switch affinityAssistantBehavior {
+	case affinityassistant.AffinityAssistantDisabled:
 		return nil
-	}
-
-	var errs []error
-	for _, w := range pr.Spec.Workspaces {
-		if w.PersistentVolumeClaim != nil || w.VolumeClaimTemplate != nil {
-			affinityAssistantStsName := getAffinityAssistantName(w.Name, pr.Name)
-			if err := c.KubeClientSet.AppsV1().StatefulSets(pr.Namespace).Delete(ctx, affinityAssistantStsName, metav1.DeleteOptions{}); err != nil && !apierrors.IsNotFound(err) {
-				errs = append(errs, fmt.Errorf("failed to delete StatefulSet %s: %w", affinityAssistantStsName, err))
+	case affinityassistant.AffinityAssistantPerWorkspace:
+		var errs []error
+		for _, w := range pr.Spec.Workspaces {
+			if w.PersistentVolumeClaim != nil || w.VolumeClaimTemplate != nil {
+				affinityAssistantStsName := getPerWorkspaceAffinityAssistantName(w.Name, pr.Name)
+				if err := c.KubeClientSet.AppsV1().StatefulSets(pr.Namespace).Delete(ctx, affinityAssistantStsName, metav1.DeleteOptions{}); err != nil && !apierrors.IsNotFound(err) {
+					errs = append(errs, fmt.Errorf("failed to delete StatefulSet %s: %w", affinityAssistantStsName, err))
+				}
 			}
 		}
+		return errorutils.NewAggregate(errs)
+	case affinityassistant.AffinityAssistantPerPipelineRun:
+		affinityAssistantStsName := getPerPipelineRunAffinityAssistantName(pr.Name)
+		if err := c.KubeClientSet.AppsV1().StatefulSets(pr.Namespace).Delete(ctx, affinityAssistantStsName, metav1.DeleteOptions{}); err != nil && !apierrors.IsNotFound(err) {
+			return fmt.Errorf("failed to delete StatefulSet %s: %w", affinityAssistantStsName, err)
+		}
+	default:
+		return fmt.Errorf("invalid affinity assistant behavior %s: ", affinityAssistantBehavior)
 	}
-	return errorutils.NewAggregate(errs)
+	return nil
 }
 
-func getAffinityAssistantName(pipelineWorkspaceName string, pipelineRunName string) string {
+func getPerWorkspaceAffinityAssistantName(pipelineWorkspaceName string, pipelineRunName string) string {
 	hashBytes := sha256.Sum256([]byte(pipelineWorkspaceName + pipelineRunName))
+	hashString := fmt.Sprintf("%x", hashBytes)
+	return fmt.Sprintf("%s-%s", "affinity-assistant", hashString[:10])
+}
+
+func getPerPipelineRunAffinityAssistantName(pipelineRunName string) string {
+	hashBytes := sha256.Sum256([]byte(pipelineRunName))
 	hashString := fmt.Sprintf("%x", hashBytes)
 	return fmt.Sprintf("%s-%s", "affinity-assistant", hashString[:10])
 }
@@ -125,7 +171,7 @@ func getStatefulSetLabels(pr *v1beta1.PipelineRun, affinityAssistantName string)
 	return labels
 }
 
-func affinityAssistantStatefulSet(name string, pr *v1beta1.PipelineRun, claimName string, affinityAssistantImage string, defaultAATpl *pod.AffinityAssistantTemplate) *appsv1.StatefulSet {
+func affinityAssistantStatefulSet(name string, pr *v1beta1.PipelineRun, claimNames []string, affinityAssistantImage string, defaultAATpl *pod.AffinityAssistantTemplate) *appsv1.StatefulSet {
 	// We want a singleton pod
 	replicas := int32(1)
 
@@ -155,6 +201,26 @@ func affinityAssistantStatefulSet(name string, pr *v1beta1.PipelineRun, claimNam
 		},
 	}}
 
+	var volumes []corev1.Volume
+	for i, claimName := range claimNames {
+		volumes = append(volumes, corev1.Volume{
+			Name: fmt.Sprintf("workspace-%d", i),
+			VolumeSource: corev1.VolumeSource{
+				PersistentVolumeClaim: &corev1.PersistentVolumeClaimVolumeSource{
+					// A Pod mounting a PersistentVolumeClaim that has a StorageClass with
+					// volumeBindingMode: Immediate
+					// the PV is allocated on a Node first, and then the pod need to be
+					// scheduled to that node.
+					// To support those PVCs, the Affinity Assistant must also mount the
+					// same PersistentVolumeClaim - to be sure that the Affinity Assistant
+					// pod is scheduled to the same Availability Zone as the PV, when using
+					// a regional cluster. This is called VolumeScheduling.
+					ClaimName: claimName,
+				},
+			},
+		})
+	}
+
 	return &appsv1.StatefulSet{
 		TypeMeta: metav1.TypeMeta{
 			Kind:       "StatefulSet",
@@ -182,34 +248,11 @@ func affinityAssistantStatefulSet(name string, pr *v1beta1.PipelineRun, claimNam
 					ImagePullSecrets: tpl.ImagePullSecrets,
 
 					Affinity: getAssistantAffinityMergedWithPodTemplateAffinity(pr),
-					Volumes: []corev1.Volume{{
-						Name: "workspace",
-						VolumeSource: corev1.VolumeSource{
-							PersistentVolumeClaim: &corev1.PersistentVolumeClaimVolumeSource{
-								// A Pod mounting a PersistentVolumeClaim that has a StorageClass with
-								// volumeBindingMode: Immediate
-								// the PV is allocated on a Node first, and then the pod need to be
-								// scheduled to that node.
-								// To support those PVCs, the Affinity Assistant must also mount the
-								// same PersistentVolumeClaim - to be sure that the Affinity Assistant
-								// pod is scheduled to the same Availability Zone as the PV, when using
-								// a regional cluster. This is called VolumeScheduling.
-								ClaimName: claimName,
-							}},
-					}},
+					Volumes:  volumes,
 				},
 			},
 		},
 	}
-}
-
-// isAffinityAssistantDisabled returns a bool indicating whether an Affinity Assistant should
-// be created for each PipelineRun that use workspaces with PersistentVolumeClaims
-// as volume source. The default behaviour is to enable the Affinity Assistant to
-// provide Node Affinity for TaskRuns that share a PVC workspace.
-func (c *Reconciler) isAffinityAssistantDisabled(ctx context.Context) bool {
-	cfg := config.FromContextOrDefaults(ctx)
-	return cfg.FeatureFlags.DisableAffinityAssistant
 }
 
 // getAssistantAffinityMergedWithPodTemplateAffinity return the affinity that merged with PipelineRun PodTemplate affinity.

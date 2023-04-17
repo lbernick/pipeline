@@ -1,0 +1,49 @@
+apiVersion: tekton.dev/v1
+kind: PipelineRun
+metadata:
+  generateName: demo-pipeline-run-
+spec:
+  pipelineSpec:
+    workspaces:
+    - name: workspace-1
+    - name: workspace-2
+    tasks:
+    - name: parallel-1
+      workspaces:
+      - name: workspace-1
+      taskSpec:
+        steps:
+        - image: busybox
+          script: echo "$(workspaces.workspace-1.path)"
+    - name: parallel-2
+      workspaces:
+      - name: workspace-2
+      taskSpec:
+        steps:
+        - image: busybox
+          script: echo "$(workspaces.workspace-2.path)"
+    - name: parallel-3
+      workspaces:
+      - name: workspace-1
+      - name: workspace-2
+      taskSpec:
+        steps:
+        - image: busybox
+          script: echo "$(workspaces.workspace-1.path)-$(workspaces.workspace-2.path)"
+  workspaces:
+  - name: workspace-1
+    volumeClaimTemplate:
+      spec:
+        accessModes:
+          - ReadWriteOnce
+        resources:
+          requests:
+            storage: 1Gi
+  - name: workspace-2
+    volumeClaimTemplate:
+      spec:
+        accessModes:
+          - ReadWriteOnce
+        resources:
+          requests:
+            storage: 1Gi

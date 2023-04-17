@@ -33,6 +33,7 @@ import (
 	pipelinerunreconciler "github.com/tektoncd/pipeline/pkg/client/injection/reconciler/pipeline/v1beta1/pipelinerun"
 	alpha1listers "github.com/tektoncd/pipeline/pkg/client/listers/pipeline/v1alpha1"
 	listers "github.com/tektoncd/pipeline/pkg/client/listers/pipeline/v1beta1"
+	"github.com/tektoncd/pipeline/pkg/internal/affinityassistant"
 	resolutionutil "github.com/tektoncd/pipeline/pkg/internal/resolution"
 	"github.com/tektoncd/pipeline/pkg/pipelinerunmetrics"
 	tknreconciler "github.com/tektoncd/pipeline/pkg/reconciler"
@@ -608,9 +609,19 @@ func (c *Reconciler) reconcile(ctx context.Context, pr *v1beta1.PipelineRun, get
 			}
 		}
 
-		if !c.isAffinityAssistantDisabled(ctx) {
-			// create Affinity Assistant (StatefulSet) so that taskRun pods that share workspace PVC achieve Node Affinity
-			if err = c.createAffinityAssistants(ctx, pr.Spec.Workspaces, pr, pr.Namespace); err != nil {
+		switch affinityassistant.GetAffinityAssistantBehavior(ctx) {
+		case affinityassistant.AffinityAssistantDisabled:
+			break
+		case affinityassistant.AffinityAssistantPerWorkspace:
+			if err = c.createAffinityAssistantsPerWorkspace(ctx, pr.Spec.Workspaces, pr, pr.Namespace); err != nil {
+				logger.Errorf("Failed to create affinity assistant StatefulSet for PipelineRun %s: %v", pr.Name, err)
+				pr.Status.MarkFailed(ReasonCouldntCreateAffinityAssistantStatefulSet,
+					"Failed to create StatefulSet for PipelineRun %s/%s correctly: %s",
+					pr.Namespace, pr.Name, err)
+				return controller.NewPermanentError(err)
+			}
+		case affinityassistant.AffinityAssistantPerPipelineRun:
+			if err = c.createAffinityAssistantsPerPipelineRun(ctx, pr.Spec.Workspaces, pr, pr.Namespace); err != nil {
 				logger.Errorf("Failed to create affinity assistant StatefulSet for PipelineRun %s: %v", pr.Name, err)
 				pr.Status.MarkFailed(ReasonCouldntCreateAffinityAssistantStatefulSet,
 					"Failed to create StatefulSet for PipelineRun %s/%s correctly: %s",
@@ -871,8 +882,15 @@ func (c *Reconciler) createTaskRun(ctx context.Context, taskRunName string, para
 		return nil, err
 	}
 
-	if !c.isAffinityAssistantDisabled(ctx) && pipelinePVCWorkspaceName != "" {
-		tr.Annotations[workspace.AnnotationAffinityAssistantName] = getAffinityAssistantName(pipelinePVCWorkspaceName, pr.Name)
+	switch affinityassistant.GetAffinityAssistantBehavior(ctx) {
+	case affinityassistant.AffinityAssistantDisabled:
+		break
+	case affinityassistant.AffinityAssistantPerWorkspace:
+		if pipelinePVCWorkspaceName != "" {
+			tr.Annotations[workspace.AnnotationAffinityAssistantName] = getPerWorkspaceAffinityAssistantName(pipelinePVCWorkspaceName, pr.Name)
+		}
+	case affinityassistant.AffinityAssistantPerPipelineRun:
+		tr.Annotations[workspace.AnnotationAffinityAssistantName] = getPerPipelineRunAffinityAssistantName(pr.Name)
 	}
 
 	logger.Infof("Creating a new TaskRun object %s for pipeline task %s", taskRunName, rpt.PipelineTask.Name)
@@ -948,8 +966,15 @@ func (c *Reconciler) createRunObject(ctx context.Context, runName string, params
 	}
 	// Set the affinity assistant annotation in case the custom task creates TaskRuns or Pods
 	// that can take advantage of it.
-	if !c.isAffinityAssistantDisabled(ctx) && pipelinePVCWorkspaceName != "" {
-		r.Annotations[workspace.AnnotationAffinityAssistantName] = getAffinityAssistantName(pipelinePVCWorkspaceName, pr.Name)
+	switch affinityassistant.GetAffinityAssistantBehavior(ctx) {
+	case affinityassistant.AffinityAssistantDisabled:
+		break
+	case affinityassistant.AffinityAssistantPerWorkspace:
+		if pipelinePVCWorkspaceName != "" {
+			r.Annotations[workspace.AnnotationAffinityAssistantName] = getPerWorkspaceAffinityAssistantName(pipelinePVCWorkspaceName, pr.Name)
+		}
+	case affinityassistant.AffinityAssistantPerPipelineRun:
+		r.Annotations[workspace.AnnotationAffinityAssistantName] = getPerPipelineRunAffinityAssistantName(pr.Name)
 	}
 
 	logger.Infof("Creating a new CustomRun object %s", runName)
