@@ -186,7 +186,7 @@ func TestCreateExistPersistentVolumeClaims(t *testing.T) {
 	fakekubeclient := fakek8s.NewSimpleClientset()
 	pvcHandler := defaultPVCHandler{fakekubeclient, zap.NewExample().Sugar()}
 
-	for _, claim := range getPersistentVolumeClaims(workspaces, ownerRef, namespace) {
+	for _, claim := range getPersistentVolumeClaims(context.Background(), workspaces, ownerRef, namespace) {
 		_, err := fakekubeclient.CoreV1().PersistentVolumeClaims(namespace).Create(ctx, claim, metav1.CreateOptions{})
 		if err != nil {
 			t.Fatalf("unexpected error: %v", err)

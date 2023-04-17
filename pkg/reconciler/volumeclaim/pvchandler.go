@@ -22,6 +22,7 @@ import (
 	"fmt"
 
 	"github.com/tektoncd/pipeline/pkg/apis/pipeline/v1beta1"
+	"github.com/tektoncd/pipeline/pkg/internal/affinityassistant"
 	"go.uber.org/zap"
 	corev1 "k8s.io/api/core/v1"
 	apierrors "k8s.io/apimachinery/pkg/api/errors"
@@ -57,7 +58,7 @@ func NewPVCHandler(clientset clientset.Interface, logger *zap.SugaredLogger) Pvc
 // with that name is created with the provided OwnerReference.
 func (c *defaultPVCHandler) CreatePersistentVolumeClaimsForWorkspaces(ctx context.Context, wb []v1beta1.WorkspaceBinding, ownerReference metav1.OwnerReference, namespace string) error {
 	var errs []error
-	for _, claim := range getPersistentVolumeClaims(wb, ownerReference, namespace) {
+	for _, claim := range getPersistentVolumeClaims(ctx, wb, ownerReference, namespace) {
 		_, err := c.clientset.CoreV1().PersistentVolumeClaims(claim.Namespace).Get(ctx, claim.Name, metav1.GetOptions{})
 		switch {
 		case apierrors.IsNotFound(err):
@@ -81,7 +82,7 @@ func (c *defaultPVCHandler) CreatePersistentVolumeClaimsForWorkspaces(ctx contex
 	return errorutils.NewAggregate(errs)
 }
 
-func getPersistentVolumeClaims(workspaceBindings []v1beta1.WorkspaceBinding, ownerReference metav1.OwnerReference, namespace string) map[string]*corev1.PersistentVolumeClaim {
+func getPersistentVolumeClaims(ctx context.Context, workspaceBindings []v1beta1.WorkspaceBinding, ownerReference metav1.OwnerReference, namespace string) map[string]*corev1.PersistentVolumeClaim {
 	claims := make(map[string]*corev1.PersistentVolumeClaim)
 	for _, workspaceBinding := range workspaceBindings {
 		if workspaceBinding.VolumeClaimTemplate == nil {
@@ -92,6 +93,10 @@ func getPersistentVolumeClaims(workspaceBindings []v1beta1.WorkspaceBinding, own
 		claim.Name = GetPersistentVolumeClaimName(workspaceBinding.VolumeClaimTemplate, workspaceBinding, ownerReference)
 		claim.Namespace = namespace
 		claim.OwnerReferences = []metav1.OwnerReference{ownerReference}
+		if affinityassistant.GetAffinityAssistantBehavior(ctx) == affinityassistant.AffinityAssistantPerPipelineRun {
+			storageClassName := "standard-rwo"
+			claim.Spec.StorageClassName = &storageClassName
+		}
 		claims[workspaceBinding.Name] = claim
 	}
 	return claims

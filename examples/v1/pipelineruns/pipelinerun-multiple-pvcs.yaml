@@ -1,0 +1,49 @@
+apiVersion: tekton.dev/v1
+kind: PipelineRun
+metadata:
+  generateName: demo-pipeline-run-
+spec:
+  pipelineSpec:
+    workspaces:
+    - name: git-source
+    - name: another-workspace
+    tasks:
+    - name: foo
+      workspaces:
+      - name: git-source
+      taskSpec:
+        steps:
+        - image: busybox
+          script: echo "$(workspaces.git-source.path)"
+    - name: bar
+      workspaces:
+      - name: another-workspace
+      taskSpec:
+        steps:
+        - image: busybox
+          script: echo "$(workspaces.another-workspace.path)"
+    - name: baz
+      workspaces:
+      - name: git-source
+      - name: another-workspace
+      taskSpec:
+        steps:
+        - image: busybox
+          script: echo "$(workspaces.git-source.path)-$(workspaces.another-workspace.path)"
+  workspaces:
+  - name: git-source
+    volumeClaimTemplate:
+      spec:
+        accessModes:
+          - ReadWriteOnce
+        resources:
+          requests:
+            storage: 1Gi
+  - name: another-workspace
+    volumeClaimTemplate:
+      spec:
+        accessModes:
+          - ReadWriteOnce
+        resources:
+          requests:
+            storage: 1Gi

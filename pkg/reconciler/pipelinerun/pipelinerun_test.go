@@ -503,7 +503,7 @@ spec:
 		wantRun: mustParseCustomRunWithObjectMeta(t,
 			taskRunObjectMetaWithAnnotations("test-pipelinerun-custom-task", "namespace", "test-pipelinerun",
 				"test-pipelinerun", "custom-task", false, map[string]string{
-					"pipeline.tekton.dev/affinity-assistant": getAffinityAssistantName("pipelinews", pipelineRunName),
+					"pipeline.tekton.dev/affinity-assistant": getPerWorkspaceAffinityAssistantName("pipelinews", pipelineRunName),
 				}),
 			`
 spec:
@@ -3781,8 +3781,8 @@ spec:
 		t.Fatalf("expected one StatefulSet created. %d was created", len(stsNames))
 	}
 
-	expectedAffinityAssistantName1 := getAffinityAssistantName(workspaceName, pipelineRunName)
-	expectedAffinityAssistantName2 := getAffinityAssistantName(workspaceName2, pipelineRunName)
+	expectedAffinityAssistantName1 := getPerWorkspaceAffinityAssistantName(workspaceName, pipelineRunName)
+	expectedAffinityAssistantName2 := getPerWorkspaceAffinityAssistantName(workspaceName2, pipelineRunName)
 	expectedAffinityAssistantStsNames := make(map[string]bool)
 	expectedAffinityAssistantStsNames[expectedAffinityAssistantName1] = true
 	expectedAffinityAssistantStsNames[expectedAffinityAssistantName2] = true
