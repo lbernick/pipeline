@@ -214,19 +214,6 @@ func (c *Reconciler) isAffinityAssistantDisabled(ctx context.Context) bool {
 
 // getAssistantAffinityMergedWithPodTemplateAffinity return the affinity that merged with PipelineRun PodTemplate affinity.
 func getAssistantAffinityMergedWithPodTemplateAffinity(pr *v1beta1.PipelineRun) *corev1.Affinity {
-	// use podAntiAffinity to repel other affinity assistants
-	repelOtherAffinityAssistantsPodAffinityTerm := corev1.WeightedPodAffinityTerm{
-		Weight: 100,
-		PodAffinityTerm: corev1.PodAffinityTerm{
-			LabelSelector: &metav1.LabelSelector{
-				MatchLabels: map[string]string{
-					workspace.LabelComponent: workspace.ComponentNameAffinityAssistant,
-				},
-			},
-			TopologyKey: "kubernetes.io/hostname",
-		},
-	}
-
 	affinityAssistantsAffinity := &corev1.Affinity{}
 	if pr.Spec.PodTemplate != nil && pr.Spec.PodTemplate.Affinity != nil {
 		affinityAssistantsAffinity = pr.Spec.PodTemplate.Affinity
@@ -234,9 +221,5 @@ func getAssistantAffinityMergedWithPodTemplateAffinity(pr *v1beta1.PipelineRun) 
 	if affinityAssistantsAffinity.PodAntiAffinity == nil {
 		affinityAssistantsAffinity.PodAntiAffinity = &corev1.PodAntiAffinity{}
 	}
-	affinityAssistantsAffinity.PodAntiAffinity.PreferredDuringSchedulingIgnoredDuringExecution =
-		append(affinityAssistantsAffinity.PodAntiAffinity.PreferredDuringSchedulingIgnoredDuringExecution,
-			repelOtherAffinityAssistantsPodAffinityTerm)
-
 	return affinityAssistantsAffinity
 }
