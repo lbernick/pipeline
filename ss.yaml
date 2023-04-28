@@ -1,0 +1,67 @@
+apiVersion: apps/v1
+kind: StatefulSet
+metadata:
+  name: affinity-assistant-foo
+  namespace: default
+spec:
+  podManagementPolicy: OrderedReady
+  replicas: 1
+  revisionHistoryLimit: 10
+  selector:
+    matchLabels:
+      app.kubernetes.io/component: affinity-assistant
+      app.kubernetes.io/instance: affinity-assistant-e6cefedda6
+      tekton.dev/pipeline: good-morning-run-4ljtv
+      tekton.dev/pipelineRun: good-morning-run-4ljtv
+  serviceName: ""
+  volumeClaimTemplates:
+    - metadata:
+        name: my-pvc
+      spec:
+        accessModes:
+          - ReadWriteOnce
+        resources:
+          requests:
+            storage: 10Mi
+  template:
+    metadata:
+      creationTimestamp: null
+      labels:
+        app.kubernetes.io/component: affinity-assistant
+        app.kubernetes.io/instance: affinity-assistant-e6cefedda6
+        tekton.dev/pipeline: good-morning-run-4ljtv
+        tekton.dev/pipelineRun: good-morning-run-4ljtv
+    spec:
+      affinity:
+        podAntiAffinity:
+          preferredDuringSchedulingIgnoredDuringExecution:
+          - podAffinityTerm:
+              labelSelector:
+                matchLabels:
+                  app.kubernetes.io/component: affinity-assistant
+              topologyKey: kubernetes.io/hostname
+            weight: 100
+      containers:
+      - args:
+        - tekton_run_indefinitely
+        image: gcr.io/leebernick-test/nop-8eac7c133edad5df719dc37b36b62482@sha256:2e353f4b9d7aa66be3d15241fdda6271bc04224b1d6ec174e8902efd848ad118
+        imagePullPolicy: IfNotPresent
+        name: affinity-assistant
+        resources:
+          limits:
+            cpu: 50m
+            memory: 100Mi
+          requests:
+            cpu: 50m
+            memory: 100Mi
+        terminationMessagePath: /dev/termination-log
+        terminationMessagePolicy: File
+      dnsPolicy: ClusterFirst
+      restartPolicy: Always
+      schedulerName: default-scheduler
+      securityContext: {}
+      terminationGracePeriodSeconds: 30
+  updateStrategy:
+    rollingUpdate:
+      partition: 0
+    type: RollingUpdate

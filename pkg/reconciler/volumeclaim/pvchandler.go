@@ -57,6 +57,14 @@ func NewPVCHandler(clientset clientset.Interface, logger *zap.SugaredLogger) Pvc
 // resource with the volumeClaimTemplate declared, a PipelineRun or TaskRun. If the PVC did not exist, a new PVC
 // with that name is created with the provided OwnerReference.
 func (c *defaultPVCHandler) CreatePersistentVolumeClaimsForWorkspaces(ctx context.Context, wb []v1beta1.WorkspaceBinding, ownerReference metav1.OwnerReference, namespace string) error {
+	switch affinityassistant.GetAffinityAssistantBehavior(ctx) {
+	case affinityassistant.AffinityAssistantPerPipelineRun:
+		return nil
+	case affinityassistant.AffinityAssistantPerWorkspace:
+		return nil
+	default:
+	}
+
 	var errs []error
 	for _, claim := range getPersistentVolumeClaims(ctx, wb, ownerReference, namespace) {
 		_, err := c.clientset.CoreV1().PersistentVolumeClaims(claim.Namespace).Get(ctx, claim.Name, metav1.GetOptions{})
@@ -92,11 +100,8 @@ func getPersistentVolumeClaims(ctx context.Context, workspaceBindings []v1beta1.
 		claim := workspaceBinding.VolumeClaimTemplate.DeepCopy()
 		claim.Name = GetPersistentVolumeClaimName(workspaceBinding.VolumeClaimTemplate, workspaceBinding, ownerReference)
 		claim.Namespace = namespace
+		claim.Labels["tekton.dev/workspace"] = workspaceBinding.Name
 		claim.OwnerReferences = []metav1.OwnerReference{ownerReference}
-		if affinityassistant.GetAffinityAssistantBehavior(ctx) == affinityassistant.AffinityAssistantPerPipelineRun {
-			storageClassName := "standard-rwo"
-			claim.Spec.StorageClassName = &storageClassName
-		}
 		claims[workspaceBinding.Name] = claim
 	}
 	return claims

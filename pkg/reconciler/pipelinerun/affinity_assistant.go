@@ -53,13 +53,24 @@ func (c *Reconciler) createAffinityAssistantsPerWorkspace(ctx context.Context, w
 
 	var errs []error
 	for _, w := range wb {
+		var claimTemplates []corev1.PersistentVolumeClaim
+		var claims []corev1.PersistentVolumeClaimVolumeSource
+		if w.PersistentVolumeClaim != nil {
+			claims = append(claims, *w.PersistentVolumeClaim.DeepCopy())
+		} else if w.VolumeClaimTemplate != nil {
+			claimTemplate := w.VolumeClaimTemplate.DeepCopy()
+			claimTemplate.Name = volumeclaim.GetPersistentVolumeClaimName(w.VolumeClaimTemplate, w, *kmeta.NewControllerRef(pr))
+			claimTemplates = append(claimTemplates, *claimTemplate)
+		} else {
+			continue
+		}
+
 		if w.PersistentVolumeClaim != nil || w.VolumeClaimTemplate != nil {
 			affinityAssistantName := getPerWorkspaceAffinityAssistantName(w.Name, pr.Name)
 			_, err := c.KubeClientSet.AppsV1().StatefulSets(namespace).Get(ctx, affinityAssistantName, metav1.GetOptions{})
-			claimName := getPerWorkspaceClaimName(w, *kmeta.NewControllerRef(pr))
 			switch {
 			case apierrors.IsNotFound(err):
-				affinityAssistantStatefulSet := affinityAssistantStatefulSet(affinityAssistantName, pr, []string{claimName}, c.Images.NopImage, cfg.Defaults.DefaultAAPodTemplate)
+				affinityAssistantStatefulSet := affinityAssistantStatefulSet(affinityAssistantName, pr, claimTemplates, claims, c.Images.NopImage, cfg.Defaults.DefaultAAPodTemplate)
 				_, err := c.KubeClientSet.AppsV1().StatefulSets(namespace).Create(ctx, affinityAssistantStatefulSet, metav1.CreateOptions{})
 				if err != nil {
 					errs = append(errs, fmt.Errorf("failed to create StatefulSet %s: %w", affinityAssistantName, err))
@@ -81,17 +92,28 @@ func (c *Reconciler) createAffinityAssistantsPerPipelineRun(ctx context.Context,
 	cfg := config.FromContextOrDefaults(ctx)
 	affinityAssistantName := getPerPipelineRunAffinityAssistantName(pr.Name)
 	_, err := c.KubeClientSet.AppsV1().StatefulSets(namespace).Get(ctx, affinityAssistantName, metav1.GetOptions{})
-	var claimNames []string
+	var claimTemplates []corev1.PersistentVolumeClaim
+	var claims []corev1.PersistentVolumeClaimVolumeSource
 	for _, w := range wb {
-		if w.PersistentVolumeClaim != nil || w.VolumeClaimTemplate != nil {
-			claimName := getPerWorkspaceClaimName(w, *kmeta.NewControllerRef(pr))
-			claimNames = append(claimNames, claimName)
+		if w.PersistentVolumeClaim != nil {
+			claims = append(claims, *w.PersistentVolumeClaim.DeepCopy())
+		} else if w.VolumeClaimTemplate != nil {
+			claimTemplate := w.VolumeClaimTemplate.DeepCopy()
+			ownerRef := kmeta.NewControllerRef(pr)
+			if len(claimTemplate.Labels) == 0 {
+				claimTemplate.Labels = make(map[string]string)
+			}
+			claimTemplate.Labels["tekton.dev/workspace"] = w.Name
+			claimTemplate.OwnerReferences = []metav1.OwnerReference{*ownerRef}
+			claimTemplate.Name = volumeclaim.GetPersistentVolumeClaimName(w.VolumeClaimTemplate, w, *ownerRef)
+			claimTemplates = append(claimTemplates, *claimTemplate)
 		}
+
 	}
 	var errs []error
 	switch {
 	case apierrors.IsNotFound(err):
-		affinityAssistantStatefulSet := affinityAssistantStatefulSet(affinityAssistantName, pr, claimNames, c.Images.NopImage, cfg.Defaults.DefaultAAPodTemplate)
+		affinityAssistantStatefulSet := affinityAssistantStatefulSet(affinityAssistantName, pr, claimTemplates, claims, c.Images.NopImage, cfg.Defaults.DefaultAAPodTemplate)
 		_, err := c.KubeClientSet.AppsV1().StatefulSets(namespace).Create(ctx, affinityAssistantStatefulSet, metav1.CreateOptions{})
 		if err != nil {
 			errs = append(errs, fmt.Errorf("failed to create StatefulSet %s: %w", affinityAssistantName, err))
@@ -104,16 +126,6 @@ func (c *Reconciler) createAffinityAssistantsPerPipelineRun(ctx context.Context,
 	}
 
 	return errorutils.NewAggregate(errs)
-}
-
-func getPerWorkspaceClaimName(w v1beta1.WorkspaceBinding, ownerReference metav1.OwnerReference) string {
-	if w.PersistentVolumeClaim != nil {
-		return w.PersistentVolumeClaim.ClaimName
-	} else if w.VolumeClaimTemplate != nil {
-		return volumeclaim.GetPersistentVolumeClaimName(w.VolumeClaimTemplate, w, ownerReference)
-	}
-
-	return ""
 }
 
 func (c *Reconciler) cleanupAffinityAssistants(ctx context.Context, pr *v1beta1.PipelineRun) error {
@@ -134,6 +146,7 @@ func (c *Reconciler) cleanupAffinityAssistants(ctx context.Context, pr *v1beta1.
 		}
 		return errorutils.NewAggregate(errs)
 	case affinityassistant.AffinityAssistantPerPipelineRun:
+		// TODO: Clean up PVCs as well
 		affinityAssistantStsName := getPerPipelineRunAffinityAssistantName(pr.Name)
 		if err := c.KubeClientSet.AppsV1().StatefulSets(pr.Namespace).Delete(ctx, affinityAssistantStsName, metav1.DeleteOptions{}); err != nil && !apierrors.IsNotFound(err) {
 			return fmt.Errorf("failed to delete StatefulSet %s: %w", affinityAssistantStsName, err)
@@ -171,7 +184,7 @@ func getStatefulSetLabels(pr *v1beta1.PipelineRun, affinityAssistantName string)
 	return labels
 }
 
-func affinityAssistantStatefulSet(name string, pr *v1beta1.PipelineRun, claimNames []string, affinityAssistantImage string, defaultAATpl *pod.AffinityAssistantTemplate) *appsv1.StatefulSet {
+func affinityAssistantStatefulSet(name string, pr *v1beta1.PipelineRun, claimTemplates []corev1.PersistentVolumeClaim, claims []corev1.PersistentVolumeClaimVolumeSource, affinityAssistantImage string, defaultAATpl *pod.AffinityAssistantTemplate) *appsv1.StatefulSet {
 	// We want a singleton pod
 	replicas := int32(1)
 
@@ -179,6 +192,11 @@ func affinityAssistantStatefulSet(name string, pr *v1beta1.PipelineRun, claimNam
 	// merge pod template from spec and default if any of them are defined
 	if pr.Spec.PodTemplate != nil || defaultAATpl != nil {
 		tpl = pod.MergeAAPodTemplateWithDefault(pr.Spec.PodTemplate.ToAffinityAssistantTemplate(), defaultAATpl)
+	}
+
+	var mounts []corev1.VolumeMount
+	for _, claimTemplate := range claimTemplates {
+		mounts = append(mounts, corev1.VolumeMount{Name: claimTemplate.Name, MountPath: claimTemplate.Name})
 	}
 
 	containers := []corev1.Container{{
@@ -199,24 +217,26 @@ func affinityAssistantStatefulSet(name string, pr *v1beta1.PipelineRun, claimNam
 				"memory": resource.MustParse("100Mi"),
 			},
 		},
+		VolumeMounts: mounts,
 	}}
 
+	// TODO: If WS specifies persistent volume claim, include as volumes in pod template. Will this require setting storage class???
+	// Otherwise, include as volumeclaimtemplate on SS and volume mounts on pod
+
 	var volumes []corev1.Volume
-	for i, claimName := range claimNames {
+	for i, claim := range claims {
 		volumes = append(volumes, corev1.Volume{
 			Name: fmt.Sprintf("workspace-%d", i),
 			VolumeSource: corev1.VolumeSource{
-				PersistentVolumeClaim: &corev1.PersistentVolumeClaimVolumeSource{
-					// A Pod mounting a PersistentVolumeClaim that has a StorageClass with
-					// volumeBindingMode: Immediate
-					// the PV is allocated on a Node first, and then the pod need to be
-					// scheduled to that node.
-					// To support those PVCs, the Affinity Assistant must also mount the
-					// same PersistentVolumeClaim - to be sure that the Affinity Assistant
-					// pod is scheduled to the same Availability Zone as the PV, when using
-					// a regional cluster. This is called VolumeScheduling.
-					ClaimName: claimName,
-				},
+				// A Pod mounting a PersistentVolumeClaim that has a StorageClass with
+				// volumeBindingMode: Immediate
+				// the PV is allocated on a Node first, and then the pod need to be
+				// scheduled to that node.
+				// To support those PVCs, the Affinity Assistant must also mount the
+				// same PersistentVolumeClaim - to be sure that the Affinity Assistant
+				// pod is scheduled to the same Availability Zone as the PV, when using
+				// a regional cluster. This is called VolumeScheduling.
+				PersistentVolumeClaim: claim.DeepCopy(),
 			},
 		})
 	}
@@ -236,6 +256,7 @@ func affinityAssistantStatefulSet(name string, pr *v1beta1.PipelineRun, claimNam
 			Selector: &metav1.LabelSelector{
 				MatchLabels: getStatefulSetLabels(pr, name),
 			},
+			VolumeClaimTemplates: claimTemplates, // TODO: These volumes don't get deleted when the statefulset is deleted!
 			Template: corev1.PodTemplateSpec{
 				ObjectMeta: metav1.ObjectMeta{
 					Labels: getStatefulSetLabels(pr, name),

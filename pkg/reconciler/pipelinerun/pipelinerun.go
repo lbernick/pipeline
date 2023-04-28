@@ -598,20 +598,18 @@ func (c *Reconciler) reconcile(ctx context.Context, pr *v1beta1.PipelineRun, get
 			return controller.NewPermanentError(err)
 		}
 
-		if pr.HasVolumeClaimTemplate() {
-			// create workspace PVC from template
-			if err = c.pvcHandler.CreatePersistentVolumeClaimsForWorkspaces(ctx, pr.Spec.Workspaces, *kmeta.NewControllerRef(pr), pr.Namespace); err != nil {
-				logger.Errorf("Failed to create PVC for PipelineRun %s: %v", pr.Name, err)
-				pr.Status.MarkFailed(volumeclaim.ReasonCouldntCreateWorkspacePVC,
-					"Failed to create PVC for PipelineRun %s/%s Workspaces correctly: %s",
-					pr.Namespace, pr.Name, err)
-				return controller.NewPermanentError(err)
-			}
-		}
-
 		switch affinityassistant.GetAffinityAssistantBehavior(ctx) {
 		case affinityassistant.AffinityAssistantDisabled:
-			break
+			if pr.HasVolumeClaimTemplate() {
+				// create workspace PVC from template
+				if err = c.pvcHandler.CreatePersistentVolumeClaimsForWorkspaces(ctx, pr.Spec.Workspaces, *kmeta.NewControllerRef(pr), pr.Namespace); err != nil {
+					logger.Errorf("Failed to create PVC for PipelineRun %s: %v", pr.Name, err)
+					pr.Status.MarkFailed(volumeclaim.ReasonCouldntCreateWorkspacePVC,
+						"Failed to create PVC for PipelineRun %s/%s Workspaces correctly: %s",
+						pr.Namespace, pr.Name, err)
+					return controller.NewPermanentError(err)
+				}
+			}
 		case affinityassistant.AffinityAssistantPerWorkspace:
 			if err = c.createAffinityAssistantsPerWorkspace(ctx, pr.Spec.Workspaces, pr, pr.Namespace); err != nil {
 				logger.Errorf("Failed to create affinity assistant StatefulSet for PipelineRun %s: %v", pr.Name, err)
@@ -877,7 +875,7 @@ func (c *Reconciler) createTaskRun(ctx context.Context, taskRunName string, para
 
 	var pipelinePVCWorkspaceName string
 	var err error
-	tr.Spec.Workspaces, pipelinePVCWorkspaceName, err = getTaskrunWorkspaces(ctx, pr, rpt)
+	tr.Spec.Workspaces, pipelinePVCWorkspaceName, err = c.getTaskrunWorkspaces(ctx, pr, rpt)
 	if err != nil {
 		return nil, err
 	}
@@ -924,7 +922,7 @@ func (c *Reconciler) createRunObject(ctx context.Context, runName string, params
 	var pipelinePVCWorkspaceName string
 	var err error
 	var workspaces []v1beta1.WorkspaceBinding
-	workspaces, pipelinePVCWorkspaceName, err = getTaskrunWorkspaces(ctx, pr, rpt)
+	workspaces, pipelinePVCWorkspaceName, err = c.getTaskrunWorkspaces(ctx, pr, rpt)
 	if err != nil {
 		return nil, err
 	}
@@ -1005,7 +1003,7 @@ func propagateWorkspaces(rpt *resources.ResolvedPipelineTask) (*resources.Resolv
 	return rpt, nil
 }
 
-func getTaskrunWorkspaces(ctx context.Context, pr *v1beta1.PipelineRun, rpt *resources.ResolvedPipelineTask) ([]v1beta1.WorkspaceBinding, string, error) {
+func (c *Reconciler) getTaskrunWorkspaces(ctx context.Context, pr *v1beta1.PipelineRun, rpt *resources.ResolvedPipelineTask) ([]v1beta1.WorkspaceBinding, string, error) {
 	var err error
 	var workspaces []v1beta1.WorkspaceBinding
 	var pipelinePVCWorkspaceName string
@@ -1032,10 +1030,19 @@ func getTaskrunWorkspaces(ctx context.Context, pr *v1beta1.PipelineRun, rpt *res
 		}
 
 		if b, hasBinding := pipelineRunWorkspaces[pipelineWorkspace]; hasBinding {
-			if b.PersistentVolumeClaim != nil || b.VolumeClaimTemplate != nil {
+			var binding v1beta1.WorkspaceBinding
+			if b.PersistentVolumeClaim != nil {
 				pipelinePVCWorkspaceName = pipelineWorkspace
+				binding = taskWorkspaceByWorkspaceVolumeSource(b, taskWorkspaceName, pipelineTaskSubPath, *kmeta.NewControllerRef(pr))
+			} else if b.VolumeClaimTemplate != nil {
+				// Turn volumeClaimTemplate from pipelinerun workspace binding into a PV for a taskrun workspace binding
+				pvc, err := c.getVolumeForPVC(ctx, b, pr)
+				if err != nil {
+					return nil, "", err
+				}
+				binding = taskWorkspaceForPVC(b, taskWorkspaceName, pipelineTaskSubPath, pvc)
 			}
-			workspaces = append(workspaces, taskWorkspaceByWorkspaceVolumeSource(b, taskWorkspaceName, pipelineTaskSubPath, *kmeta.NewControllerRef(pr)))
+			workspaces = append(workspaces, binding)
 		} else {
 			workspaceIsOptional := false
 			if rpt.ResolvedTask != nil && rpt.ResolvedTask.TaskSpec != nil {
@@ -1066,6 +1073,22 @@ func getTaskrunWorkspaces(ctx context.Context, pr *v1beta1.PipelineRun, rpt *res
 	return workspaces, pipelinePVCWorkspaceName, nil
 }
 
+func (c *Reconciler) getVolumeForPVC(ctx context.Context, wb v1beta1.WorkspaceBinding, pr *v1beta1.PipelineRun) (*corev1.PersistentVolumeClaim, error) {
+	if wb.VolumeClaimTemplate == nil {
+		return nil, nil // fixme
+	}
+	labelSelector := "tekton.dev/workspace=" + wb.Name + ",tekton.dev/pipelineRun=" + pr.Name
+	claims, err := c.KubeClientSet.CoreV1().PersistentVolumeClaims(pr.Namespace).List(ctx, metav1.ListOptions{LabelSelector: labelSelector})
+	if err != nil {
+		return nil, err
+	}
+	claimsList := claims.Items
+	if len(claimsList) != 1 {
+		return nil, fmt.Errorf("found %d pvcs for workspace %s and PR %s", len(claimsList), wb.Name, pr.Name)
+	}
+	return &claimsList[0], nil
+}
+
 // taskWorkspaceByWorkspaceVolumeSource is returning the WorkspaceBinding with the TaskRun specified name.
 // If the volume source is a volumeClaimTemplate, the template is applied and passed to TaskRun as a persistentVolumeClaim
 func taskWorkspaceByWorkspaceVolumeSource(wb v1beta1.WorkspaceBinding, taskWorkspaceName string, pipelineTaskSubPath string, owner metav1.OwnerReference) v1beta1.WorkspaceBinding {
@@ -1081,6 +1104,20 @@ func taskWorkspaceByWorkspaceVolumeSource(wb v1beta1.WorkspaceBinding, taskWorks
 		SubPath: combinedSubPath(wb.SubPath, pipelineTaskSubPath),
 		PersistentVolumeClaim: &corev1.PersistentVolumeClaimVolumeSource{
 			ClaimName: volumeclaim.GetPersistentVolumeClaimName(wb.VolumeClaimTemplate, wb, owner),
+		},
+	}
+	binding.Name = taskWorkspaceName
+	return binding
+}
+
+// taskWorkspaceByWorkspaceVolumeSource is returning the WorkspaceBinding with the TaskRun specified name.
+// If the volume source is a volumeClaimTemplate, the template is applied and passed to TaskRun as a persistentVolumeClaim
+func taskWorkspaceForPVC(wb v1beta1.WorkspaceBinding, taskWorkspaceName string, pipelineTaskSubPath string, pvc *corev1.PersistentVolumeClaim) v1beta1.WorkspaceBinding {
+	// apply template
+	binding := v1beta1.WorkspaceBinding{
+		SubPath: combinedSubPath(wb.SubPath, pipelineTaskSubPath),
+		PersistentVolumeClaim: &corev1.PersistentVolumeClaimVolumeSource{
+			ClaimName: pvc.Name,
 		},
 	}
 	binding.Name = taskWorkspaceName
