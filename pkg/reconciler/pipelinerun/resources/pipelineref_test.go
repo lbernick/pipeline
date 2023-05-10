@@ -56,6 +56,12 @@ var (
 			Kind:       "Pipeline",
 			APIVersion: "tekton.dev/v1beta1",
 		},
+		Spec: v1beta1.PipelineSpec{
+			Tasks: []v1beta1.PipelineTask{{
+				Name:    "task-1",
+				TaskRef: &v1beta1.TaskRef{Name: "foo"},
+			}},
+		},
 	}
 
 	sampleRefSource = &v1beta1.RefSource{
@@ -153,15 +159,15 @@ func TestGetPipelineFunc(t *testing.T) {
 	}{{
 		name: "remote-pipeline",
 		localPipelines: []runtime.Object{
-			simplePipelineWithBaseSpec(),
+			simplePipeline(),
 			dummyPipeline,
 		},
-		remotePipelines: []runtime.Object{simplePipeline(), dummyPipeline},
+		remotePipelines: []runtime.Object{simplePipelineWithBaseSpec(), dummyPipeline},
 		ref: &v1beta1.PipelineRef{
 			Name:   "simple",
 			Bundle: u.Host + "/remote-pipeline",
 		},
-		expected: simplePipeline(),
+		expected: simplePipelineWithBaseSpecAndDefaults(ctx),
 	}, {
 		name: "local-pipeline",
 		localPipelines: []runtime.Object{
@@ -172,18 +178,18 @@ func TestGetPipelineFunc(t *testing.T) {
 		ref: &v1beta1.PipelineRef{
 			Name: "simple",
 		},
-		expected: simplePipelineWithBaseSpec(),
+		expected: simplePipelineWithBaseSpecAndDefaults(ctx),
 	}, {
 		name:           "remote-pipeline-without-defaults",
 		localPipelines: []runtime.Object{simplePipeline()},
 		remotePipelines: []runtime.Object{
-			simplePipelineWithSpecAndParam(""),
+			simplePipelineWithSpecAndParam(),
 			dummyPipeline},
 		ref: &v1beta1.PipelineRef{
 			Name:   "simple",
 			Bundle: u.Host + "/remote-pipeline-without-defaults",
 		},
-		expected: simplePipelineWithSpecParamAndKind(),
+		expected: simplePipelineWithSpecAndParamDefaults(ctx),
 	}}
 
 	for _, tc := range testcases {
@@ -868,22 +874,23 @@ func simplePipelineWithBaseSpec() *v1beta1.Pipeline {
 	return p
 }
 
-func simplePipelineWithSpecAndParam(pt v1beta1.ParamType) *v1beta1.Pipeline {
+func simplePipelineWithBaseSpecAndDefaults(ctx context.Context) *v1beta1.Pipeline {
 	p := simplePipelineWithBaseSpec()
-	p.Spec.Params = []v1beta1.ParamSpec{{
-		Name: "foo",
-		Type: pt,
-	}}
-
+	p.SetDefaults(ctx)
 	return p
 }
 
-func simplePipelineWithSpecParamAndKind() *v1beta1.Pipeline {
+func simplePipelineWithSpecAndParam() *v1beta1.Pipeline {
 	p := simplePipelineWithBaseSpec()
 	p.Spec.Params = []v1beta1.ParamSpec{{
 		Name: "foo",
 	}}
+	return p
+}
 
+func simplePipelineWithSpecAndParamDefaults(ctx context.Context) *v1beta1.Pipeline {
+	p := simplePipelineWithSpecAndParam()
+	p.SetDefaults(ctx)
 	return p
 }
 

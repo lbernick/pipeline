@@ -651,7 +651,6 @@ func (t *ResolvedPipelineTask) resolveTaskResources(
 		return err
 	}
 
-	spec.SetDefaults(ctx)
 	rtr, err := resolvePipelineTaskResources(pipelineTask, &spec, taskName, kind)
 	if err != nil {
 		return fmt.Errorf("couldn't match referenced resources with declared resources: %w", err)
