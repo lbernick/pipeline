@@ -277,6 +277,9 @@ func TestGetTaskFunc(t *testing.T) {
 						APIVersion: "tekton.dev/v1beta1",
 						Kind:       "Task",
 					},
+					Spec: v1beta1.TaskSpec{
+						Steps: []v1beta1.Step{{Image: "busybox"}},
+					},
 				},
 				&v1beta1.Task{
 					ObjectMeta: metav1.ObjectMeta{
@@ -285,6 +288,9 @@ func TestGetTaskFunc(t *testing.T) {
 					TypeMeta: metav1.TypeMeta{
 						APIVersion: "tekton.dev/v1beta1",
 						Kind:       "Task",
+					},
+					Spec: v1beta1.TaskSpec{
+						Steps: []v1beta1.Step{{Image: "busybox"}},
 					},
 				},
 			},
@@ -299,6 +305,9 @@ func TestGetTaskFunc(t *testing.T) {
 				TypeMeta: metav1.TypeMeta{
 					APIVersion: "tekton.dev/v1beta1",
 					Kind:       "Task",
+				},
+				Spec: v1beta1.TaskSpec{
+					Steps: []v1beta1.Step{{Image: "busybox"}},
 				},
 			},
 			expectedKind: v1beta1.NamespacedTaskKind,
@@ -344,6 +353,7 @@ func TestGetTaskFunc(t *testing.T) {
 					}},
 					Params: []v1beta1.ParamSpec{{
 						Name: "foo",
+						Type: "string",
 					}},
 				},
 			},
@@ -389,10 +399,16 @@ func TestGetTaskFunc(t *testing.T) {
 				&v1beta1.ClusterTask{
 					TypeMeta:   metav1.TypeMeta{APIVersion: "tekton.dev/v1beta1", Kind: "ClusterTask"},
 					ObjectMeta: metav1.ObjectMeta{Name: "simple"},
+					Spec: v1beta1.TaskSpec{
+						Steps: []v1beta1.Step{{Image: "busybox"}},
+					},
 				},
 				&v1beta1.ClusterTask{
 					TypeMeta:   metav1.TypeMeta{APIVersion: "tekton.dev/v1beta1", Kind: "ClusterTask"},
 					ObjectMeta: metav1.ObjectMeta{Name: "dummy"},
+					Spec: v1beta1.TaskSpec{
+						Steps: []v1beta1.Step{{Image: "busybox"}},
+					},
 				},
 			},
 			ref: &v1beta1.TaskRef{
@@ -406,6 +422,9 @@ func TestGetTaskFunc(t *testing.T) {
 				TypeMeta: metav1.TypeMeta{
 					APIVersion: "tekton.dev/v1beta1",
 					Kind:       "Task",
+				},
+				Spec: v1beta1.TaskSpec{
+					Steps: []v1beta1.Step{{Image: "busybox"}},
 				},
 			},
 			expectedKind: v1beta1.ClusterTaskKind,

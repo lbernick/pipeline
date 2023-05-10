@@ -78,7 +78,6 @@ func GetTaskData(ctx context.Context, taskRun *v1beta1.TaskRun, getTask GetTask)
 		return nil, nil, fmt.Errorf("taskRun %s not providing TaskRef or TaskSpec", taskRun.Name)
 	}
 
-	taskSpec.SetDefaults(ctx)
 	return &resolutionutil.ResolvedObjectMeta{
 		ObjectMeta: &taskMeta,
 		RefSource:  refSource,

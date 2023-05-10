@@ -319,6 +319,11 @@ func (c *Reconciler) prepare(ctx context.Context, tr *v1beta1.TaskRun) (*v1beta1
 	ctx, span := c.tracerProvider.Tracer(TracerName).Start(ctx, "prepare")
 	defer span.End()
 	logger := logging.FromContext(ctx)
+	// Set defaults for the TaskRun.
+	// The TaskRun already had defaults applied when it was created, and
+	// we already set defaults for the referenced Task, so this line only matters
+	// if defaulting behavior has changed since the TaskRun was created; i.e. the TaskRun
+	// is executing during a server upgrade.
 	tr.SetDefaults(ctx)
 
 	// list VerificationPolicies for trusted resources

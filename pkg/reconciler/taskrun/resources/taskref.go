@@ -172,15 +172,33 @@ func readRuntimeObjectAsTask(ctx context.Context, obj runtime.Object, k8s kubern
 	switch obj := obj.(type) {
 	case *v1beta1.Task:
 		// Verify the Task once we fetch from the remote resolution, mutating, validation and conversion of the task should happen after the verification, since signatures are based on the remote task contents
-		err := trustedresources.VerifyTask(ctx, obj, k8s, refSource, verificationPolicies)
-		if err != nil {
-			return nil, fmt.Errorf("remote Task verification failed for object %s: %w", obj.GetName(), err)
+		verificationErr := trustedresources.VerifyTask(ctx, obj, k8s, refSource, verificationPolicies)
+		if verificationErr != nil {
+			return nil, fmt.Errorf("remote Task verification failed for v1beta1 Task %s: %w", obj.GetName(), verificationErr)
+		}
+		obj.SetDefaults(ctx)
+		// Validation must happen before conversion to the stored version of the API, since validation may differ between API versions
+		validationErr := obj.Validate(ctx)
+		if validationErr != nil {
+			return nil, fmt.Errorf("remote Task validation failed for v1beta1 Task %s: %s", obj.GetName(), validationErr)
 		}
 		return obj, nil
 	case *v1beta1.ClusterTask:
+		obj.SetDefaults(ctx)
+		// Validation must happen before conversion to the stored version of the API, since validation may differ between API versions
+		err := obj.Validate(ctx)
+		if err != nil {
+			return nil, fmt.Errorf("remote Task validation failed for v1beta1 ClusterTask %s: %s", obj.GetName(), err)
+		}
 		return convertClusterTaskToTask(*obj), nil
 	case *v1.Task:
 		// TODO(#6356): Support V1 Task verification
+		obj.SetDefaults(ctx)
+		// Validation must happen before conversion to the stored version of the API, since validation may differ between API versions
+		err := obj.Validate(ctx)
+		if err != nil {
+			return nil, fmt.Errorf("remote Task validation failed for v1 Task %s: %s", obj.GetName(), err)
+		}
 		t := &v1beta1.Task{
 			TypeMeta: metav1.TypeMeta{
 				Kind:       "Task",
@@ -188,7 +206,7 @@ func readRuntimeObjectAsTask(ctx context.Context, obj runtime.Object, k8s kubern
 			},
 		}
 		if err := t.ConvertFrom(ctx, obj); err != nil {
-			return nil, fmt.Errorf("failed to convert obj %s into Task", obj.GetObjectKind().GroupVersionKind().String())
+			return nil, fmt.Errorf("failed to convert obj %s into Task: %w", obj.GetObjectKind().GroupVersionKind().String(), err)
 		}
 		return t, nil
 	}
@@ -221,6 +239,20 @@ func (l *LocalTaskRefResolver) GetTask(ctx context.Context, name string) (*v1bet
 	if err != nil {
 		return nil, nil, err
 	}
+	// Reapply defaults to the fetched Task, since defaulting logic may have changed since it was created.
+	// For example, the Task may have been created with an older server,
+	// and we may have added a new feature with a default value since then.
+	task.SetDefaults(ctx)
+	// Skip validation of local Tasks. Tasks were validated when they were created.
+	// Local Tasks have since been converted into the stored version, and we have no way of knowing
+	// what API version was used to create and validate them.
+	//
+	// For example, if enable-api-fields is "stable" and someone creates a v1beta1 Task using beta features,
+	// this is perfectly valid. If the stored version of Task is v1, the Task is converted into v1,
+	// which doesn't allow beta features with enable-api-fields set to "stable". We should try to run the Task anyway.
+	//
+	// We plan to move to per-feature flags (https://github.com/tektoncd/pipeline/issues/5632),
+	// but this issue is relevant for as long as validation differs between v1 and v1beta1.
 	return task, nil, nil
 }
 
