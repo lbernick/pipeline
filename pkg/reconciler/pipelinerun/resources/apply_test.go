@@ -36,7 +36,6 @@ func TestApplyParameters(t *testing.T) {
 		original v1beta1.PipelineSpec
 		params   v1beta1.Params
 		expected v1beta1.PipelineSpec
-		wc       func(context.Context) context.Context
 	}{{
 		name: "single parameter",
 		original: v1beta1.PipelineSpec{
@@ -211,7 +210,6 @@ func TestApplyParameters(t *testing.T) {
 				},
 			}},
 		},
-		wc: config.EnableAlphaAPIFields,
 	}, {
 		name: "parameter propagation object finally task",
 		original: v1beta1.PipelineSpec{
@@ -241,7 +239,6 @@ func TestApplyParameters(t *testing.T) {
 				},
 			}},
 		},
-		wc: config.EnableAlphaAPIFields,
 	}, {
 		name: "parameter propagation with task default but no task winner pipeline",
 		original: v1beta1.PipelineSpec{
@@ -616,7 +613,6 @@ func TestApplyParameters(t *testing.T) {
 				},
 			}},
 		},
-		wc: config.EnableAlphaAPIFields,
 	}, {
 		name: "Finally task parameter propagation object with task default but no task winner pipeline",
 		original: v1beta1.PipelineSpec{
@@ -671,7 +667,6 @@ func TestApplyParameters(t *testing.T) {
 				},
 			}},
 		},
-		wc: config.EnableAlphaAPIFields,
 	}, {
 		name: "parameter propagation object with task default and task winner task",
 		original: v1beta1.PipelineSpec{
@@ -735,7 +730,6 @@ func TestApplyParameters(t *testing.T) {
 				},
 			}},
 		},
-		wc: config.EnableAlphaAPIFields,
 	}, {
 		name: "Finally task parameter propagation object with task default and task winner task",
 		original: v1beta1.PipelineSpec{
@@ -799,7 +793,6 @@ func TestApplyParameters(t *testing.T) {
 				},
 			}},
 		},
-		wc: config.EnableAlphaAPIFields,
 	}, {
 		name: "single parameter with when expression",
 		original: v1beta1.PipelineSpec{
@@ -1408,7 +1401,6 @@ func TestApplyParameters(t *testing.T) {
 				},
 			}},
 		},
-		wc: config.EnableAlphaAPIFields,
 	}, {
 		name: "single parameter in finally workspace subpath",
 		original: v1beta1.PipelineSpec{
@@ -1707,10 +1699,6 @@ func TestApplyParameters(t *testing.T) {
 		},
 	} {
 		tt := tt // capture range variable
-		ctx := context.Background()
-		if tt.wc != nil {
-			ctx = tt.wc(ctx)
-		}
 		t.Run(tt.name, func(t *testing.T) {
 			t.Parallel()
 			run := &v1beta1.PipelineRun{
@@ -1718,7 +1706,7 @@ func TestApplyParameters(t *testing.T) {
 					Params: tt.params,
 				},
 			}
-			got := resources.ApplyParameters(ctx, &tt.original, run)
+			got := resources.ApplyParameters(context.Background(), &tt.original, run)
 			if d := cmp.Diff(&tt.expected, got); d != "" {
 				t.Errorf("ApplyParameters() got diff %s", diff.PrintWantGot(d))
 			}

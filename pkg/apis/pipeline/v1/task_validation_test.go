@@ -139,9 +139,8 @@ func TestTaskSpecValidatePropagatedParamsAndWorkspaces(t *testing.T) {
 				Workspaces:   tt.fields.Workspaces,
 				Results:      tt.fields.Results,
 			}
-			ctx := config.EnableBetaAPIFields(context.Background())
+			ctx := config.SkipValidationDueToPropagatedParametersAndWorkspaces(context.Background(), true)
 			ts.SetDefaults(ctx)
-			ctx = config.SkipValidationDueToPropagatedParametersAndWorkspaces(ctx, true)
 			if err := ts.Validate(ctx); err != nil {
 				t.Errorf("TaskSpec.Validate() = %v", err)
 			}
