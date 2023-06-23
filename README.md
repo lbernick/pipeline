@@ -16,14 +16,6 @@ Tekton Pipelines are **Decoupled**:
 
 - One Pipeline can be used to deploy to any k8s cluster
 - The Tasks which make up a Pipeline can easily be run in isolation
-- Resources such as git repos can easily be swapped between runs
-
-Tekton Pipelines are **Typed**:
-
-- The concept of typed resources means that for a resource such as an `Image`,
-  implementations can easily be swapped out (e.g. building with
-  [kaniko](https://github.com/GoogleContainerTools/kaniko) v.s.
-  [buildkit](https://github.com/moby/buildkit))
 
 ## Want to start using Pipelines
 
@@ -59,15 +51,11 @@ stability level of the API._
 _See [our Deprecations table](docs/deprecations.md) for features that have been
 deprecated and the earliest date they'll be removed._
 
-## Migrating
+## Migration Guides
 
-### v1alpha1 to v1beta1
-
-In the move from v1alpha1 to v1beta1 several spec fields and Tekton
-CRDs were updated or removed .
-
-For users migrating their Tasks and Pipelines from v1alpha1 to v1beta1, check
-out [the spec changes and migration paths](./docs/migrating-v1alpha1-to-v1beta1.md).
+- Migrating Tasks, TaskRuns, Pipelines, and PipelineRuns from [v1alpha1 to v1beta1](./docs/migrating-v1alpha1-to-v1beta1.md)
+- Migrating [v1alpha1 Runs to v1beta1 CustomRuns](./docs/migrating-v1alpha1.Run-to-v1beta1.CustomRun.md)
+- Migrating Tasks, TaskRuns, Pipelines, and PipelineRuns from [v1beta1 to v1](./docs/migrating-v1beta1-to-v1.md)
 
 ## Want to contribute
 

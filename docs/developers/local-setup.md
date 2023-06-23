@@ -12,20 +12,7 @@ This section provides guidelines for running Tekton on your local workstation vi
 Complete these prerequisites to run Tekton locally using Docker Desktop:
 
 - Install the [required tools](https://github.com/tektoncd/pipeline/blob/main/DEVELOPMENT.md#requirements).
-- Install [Docker Desktop](https://www.docker.com/products/docker-desktop)
-- Configure Docker Desktop ([Mac](https://docs.docker.com/docker-for-mac/#resources), [Windows](https://docs.docker.com/docker-for-windows/#resources))to use six CPUs, 10 GB of RAM and 2GB of swap space.
-- Set `host.docker.internal:5000` as an insecure registry with Docker for Desktop. See the [Docker insecure registry documentation](https://docs.docker.com/registry/insecure/).
-  for details.
-- Pass `--insecure` as an argument to your Kaniko tasks so that you can push to an insecure registry.
-- Run a local (insecure) Docker registry as follows:
 
-  `docker run -d -p 5000:5000 --name registry-srv -e REGISTRY_STORAGE_DELETE_ENABLED=true registry:2`
-
-- (Optional) Install a Docker registry viewer to verify the images have been pushed:
-
-`docker run -it -p 8080:8080 --name registry-web --link registry-srv -e REGISTRY_URL=http://registry-srv:5000/v2 -e REGISTRY_NAME=localhost:5000 hyper/docker-registry-web`
-
-- Verify that you can push to `host.docker.internal:5000/myregistry/<image_name>`.
 
 ### Reconfigure logging
 

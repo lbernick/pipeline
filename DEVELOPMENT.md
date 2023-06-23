@@ -35,7 +35,7 @@ After reading the developer docs, you may find it useful to return to these `Tek
 -   Install via
     [official installation docs](https://github.com/tektoncd/pipeline/blob/main/docs/install.md)
     or continue through [getting started for development](#getting-started)
--   [Tekton Pipeline "Hello World" tutorial](https://github.com/tektoncd/pipeline/blob/main/docs/tutorial.md) -
+-   [Tekton Pipeline "Hello World" tutorial](https://tekton.dev/docs/getting-started/) -
     Define `Tasks` and `Pipelines` (i.e., Tekton CRDs), and see what happens when they are run
 
 ---
@@ -117,15 +117,21 @@ For example:
     - Using **Docker Desktop** (Docker Hub):
 
         ```shell
-        # format: 'docker.io/${DOCKER_HUB_USERNAME}'
-        export KO_DOCKER_REPO='docker.io/my-dockerhub-username'
+        # format: '${DOCKER_HUB_USERNAME}'
+        export KO_DOCKER_REPO='my-dockerhub-username'
         ```
 
-    - You can also [host your own Docker Registry server](https://docs.docker.com/registry/deploying/) and reference it:
+    - Using a local Docker registry:
 
         ```shell
         # format: ${localhost:port}/{}
         export KO_DOCKER_REPO=`localhost:5000/mypipelineimages`
+        ```
+    
+    - Using a local registry with **KinD**
+
+        ```shell
+        $ export KO_DOCKER_REPO="kind.local"
         ```
 
 1. Optionally, add `$HOME/go/bin` to your system `PATH` so that any tooling installed via `go get` will work properly. For example:
@@ -175,17 +181,92 @@ The Tekton project requires that you develop (commit) code changes to branches t
         git remote add origin git@github.com:${YOUR_GITHUB_USERNAME}/pipeline.git
         ```
 
+### Set Up a Kubernetes cluster
+
+The recommended minimum development configuration is:
+
+- Kubernetes version 1.24 or later
+- 4 (virtual) CPU nodes
+  - 8 GB of (actual or virtualized) platform memory
+- Node autoscaling, up to 3 nodes
+
+#### Using [KinD](https://kind.sigs.k8s.io/)
+
+[KinD](https://kind.sigs.k8s.io/) is a great tool for working with Kubernetes clusters locally. It is particularly useful to quickly test code against different cluster [configurations](https://kind.sigs.k8s.io/docs/user/quick-start/#advanced).
+
+1. Install [required tools](./DEVELOPMENT.md#install-tools) (note: may require a newer version of Go).
+2. Install [Docker](https://www.docker.com/get-started).
+3. Create cluster:
+
+   ```sh
+   $ kind create cluster
+   ```
+4.
+```
+$ export KIND_CLUSTER_NAME="kind"  # only needed if you used a custom name in the previous step
+```
+
+optional: As a convenience, the [Tekton plumbing project](https://github.com/tektoncd/plumbing) provides a script named ['tekton_in_kind.sh'](https://github.com/tektoncd/plumbing/tree/main/hack#tekton_in_kindsh) that leverages `kind` to create a cluster and install Tekton Pipeline, [Tekton Triggers](https://github.com/tektoncd/triggers) and [Tekton Dashboard](https://github.com/tektoncd/dashboard) components into it.
+
+#### Using MiniKube
+
+- Follow the instructions for [running locally with Minikube](docs/developers/local-setup.md#using-minikube)
+
+#### Using Docker Desktop
+
+- Follow the instructions for [running locally with Docker Desktop](docs/developers/local-setup.md#using-docker-desktop)
+
+#### Using GKE
+
+1. [Set up a GCP Project](https://cloud.google.com/resource-manager/docs/creating-managing-projects) and [enable the GKE API](https://cloud.google.com/kubernetes-engine/docs/quickstart#before-you-begin).
+    You may find it useful to save the ID of the project in an environment
+    variable (e.g. `PROJECT_ID`).
+
+<!-- TODO: Someone needs to validate the cluster-version-->
+1. Create a GKE cluster (with `--cluster-version=latest` but you can use any
+    version 1.18 or later):
+
+    ```bash
+    export PROJECT_ID=my-gcp-project
+    export CLUSTER_NAME=mycoolcluster
+
+    gcloud container clusters create $CLUSTER_NAME \
+     --enable-autoscaling \
+     --min-nodes=1 \
+     --max-nodes=3 \
+     --scopes=cloud-platform \
+     --no-issue-client-certificate \
+     --project=$PROJECT_ID \
+     --region=us-central1 \
+     --machine-type=e2-standard-4 \
+     --num-nodes=1 \
+     --cluster-version=1.24
+    ```
+
+    > **Note**: The recommended [GCE machine type](https://cloud.google.com/compute/docs/machine-types) is `'e2-standard-4'`.
+
+    > **Note**: [The `'--scopes'` argument](https://cloud.google.com/sdk/gcloud/reference/container/clusters/create#--scopes) on the  `'gcloud container cluster create'` command controls what GCP resources the cluster's default service account has access to; for example, to give the default service account full access to your GCR registry, you can add `'storage-full'` to the `--scopes` arg. See [Authenticating to GCP](https://cloud.google.com/kubernetes-engine/docs/tutorials/authenticating-to-cloud-platform) for more details.
+
+1. Grant cluster-admin permissions to the current user:
+
+   ```bash
+   kubectl create clusterrolebinding cluster-admin-binding \
+   --clusterrole=cluster-admin \
+   --user=$(gcloud config get-value core/account)
+   ```
+
+---
+
 ### Configure Container Registry
 
 Depending on your chosen container registry that you set in the `KO_DOCKER_REPO` environment variable, you may need to additionally configure access control to allow `ko` to authenticate to it.
 
-<!-- TODO: Need instructions for MiniKube -->
-
 #### Using Docker Desktop (Docker Hub)
 
-Docker Desktop provides seamless integration with both a local (default) image registry as well as Docker Hub remote registries.  To use Docker Hub registries with `ko`, all you need do is to configure Docker Desktop with your Docker ID and password in its dashboard.
+[Docker Desktop](https://www.docker.com/products/docker-desktop) provides seamless integration with both a local (default) image registry as well as Docker Hub remote registries.  To use Docker Hub registries with `ko`, all you need do is to configure Docker Desktop with your Docker ID and password in its dashboard.
 
 #### Using Google Container Registry (GCR)
+
 If using GCR with `ko`, make sure to configure
 [authentication](https://cloud.google.com/container-registry/docs/advanced-authentication#standalone_docker_credential_helper)
 for your `KO_DOCKER_REPO` if required. To be able to push images to
@@ -258,88 +339,35 @@ as follows.
     - name: ${SECRET_NAME}
     ```
 
----
+#### Using a local Docker registry
+
+- Install [Docker Desktop](https://www.docker.com/products/docker-desktop)
+- Configure Docker Desktop ([Mac](https://docs.docker.com/docker-for-mac/#resources), [Windows](https://docs.docker.com/docker-for-windows/#resources)) to use six CPUs, 10 GB of RAM and 2GB of swap space.
+- Set `host.docker.internal:5000` as an insecure registry with Docker for Desktop. See the [Docker insecure registry documentation](https://docs.docker.com/registry/insecure/).
+  for details.
+- Run a local (insecure) Docker registry as follows:
+
+  `docker run -d -p 5000:5000 --name registry-srv -e REGISTRY_STORAGE_DELETE_ENABLED=true registry:2`
+
+- (Optional) Install a Docker registry viewer to verify the images have been pushed:
+
+`docker run -it -p 8080:8080 --name registry-web --link registry-srv -e REGISTRY_URL=http://registry-srv:5000/v2 -e REGISTRY_NAME=localhost:5000 hyper/docker-registry-web`
+
+- Verify that you can push to `host.docker.internal:5000/myregistry/<image_name>`.
+
+- Configure `ko` to use the registry:
+
+`export KO_DOCKER_REPO='localhost:5000'`
+
+#### Using a local registry on MiniKube
+
+- Follow instructions to [set up MiniKube](#using-minikube)
+
+- Set up a [registry on minikube](https://github.com/kubernetes/minikube/tree/master/deploy/addons/registry-aliases) by running `minikube addons enable registry` and `minikube addons enable registry-aliases`
 
 ## Building and deploying
 
-### Setup a Kubernetes cluster
 
-The recommended minimum development configuration is:
-
-- Kubernetes version 1.24 or later
-- 4 (virtual) CPU nodes
-  - 8 GB of (actual or virtualized) platform memory
-- Node autoscaling, up to 3 nodes
-
-#### Using [KinD](https://kind.sigs.k8s.io/)
-
-[KinD](https://kind.sigs.k8s.io/) is a great tool for working with Kubernetes clusters locally. It is particularly useful to quickly test code against different cluster [configurations](https://kind.sigs.k8s.io/docs/user/quick-start/#advanced).
-
-1. Install [required tools](./DEVELOPMENT.md#install-tools) (note: may require a newer version of Go).
-2. Install [Docker](https://www.docker.com/get-started).
-3. Create cluster:
-
-   ```sh
-   $ kind create cluster
-   ```
-
-4. Configure [ko](https://kind.sigs.k8s.io/):
-
-   ```sh
-   $ export KO_DOCKER_REPO="kind.local"
-   $ export KIND_CLUSTER_NAME="kind"  # only needed if you used a custom name in the previous step
-   ```
-
-optional: As a convenience, the [Tekton plumbing project](https://github.com/tektoncd/plumbing) provides a script named ['tekton_in_kind.sh'](https://github.com/tektoncd/plumbing/tree/main/hack#tekton_in_kindsh) that leverages `kind` to create a cluster and install Tekton Pipeline, [Tekton Triggers](https://github.com/tektoncd/triggers) and [Tekton Dashboard](https://github.com/tektoncd/dashboard) components into it.
-
-#### Using MiniKube
-
-- Follow the instructions for [running locally with Minikube](docs/developers/local-setup.md#using-minikube)
-
-#### Using Docker Desktop
-
-- Follow the instructions for [running locally with Docker Desktop](docs/developers/local-setup.md#using-docker-desktop)
-
-#### Using GKE
-
-1. [Set up a GCP Project](https://cloud.google.com/resource-manager/docs/creating-managing-projects) and [enable the GKE API](https://cloud.google.com/kubernetes-engine/docs/quickstart#before-you-begin).
-    You may find it useful to save the ID of the project in an environment
-    variable (e.g. `PROJECT_ID`).
-
-<!-- TODO: Someone needs to validate the cluster-version-->
-1. Create a GKE cluster (with `--cluster-version=latest` but you can use any
-    version 1.18 or later):
-
-    ```bash
-    export PROJECT_ID=my-gcp-project
-    export CLUSTER_NAME=mycoolcluster
-
-    gcloud container clusters create $CLUSTER_NAME \
-     --enable-autoscaling \
-     --min-nodes=1 \
-     --max-nodes=3 \
-     --scopes=cloud-platform \
-     --no-issue-client-certificate \
-     --project=$PROJECT_ID \
-     --region=us-central1 \
-     --machine-type=e2-standard-4 \
-     --num-nodes=1 \
-     --cluster-version=1.24
-    ```
-
-    > **Note**: The recommended [GCE machine type](https://cloud.google.com/compute/docs/machine-types) is `'e2-standard-4'`.
-
-    > **Note**: [The `'--scopes'` argument](https://cloud.google.com/sdk/gcloud/reference/container/clusters/create#--scopes) on the  `'gcloud container cluster create'` command controls what GCP resources the cluster's default service account has access to; for example, to give the default service account full access to your GCR registry, you can add `'storage-full'` to the `--scopes` arg. See [Authenticating to GCP](https://cloud.google.com/kubernetes-engine/docs/tutorials/authenticating-to-cloud-platform) for more details.
-
-1. Grant cluster-admin permissions to the current user:
-
-   ```bash
-   kubectl create clusterrolebinding cluster-admin-binding \
-   --clusterrole=cluster-admin \
-   --user=$(gcloud config get-value core/account)
-   ```
-
----
 
 ## Developing and testing
 
