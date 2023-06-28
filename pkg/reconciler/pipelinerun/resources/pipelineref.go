@@ -30,10 +30,13 @@ import (
 	"github.com/tektoncd/pipeline/pkg/remote/resolution"
 	remoteresource "github.com/tektoncd/pipeline/pkg/resolution/resource"
 	"github.com/tektoncd/pipeline/pkg/trustedresources"
+	apierrors "k8s.io/apimachinery/pkg/api/errors"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/runtime"
 	"k8s.io/client-go/kubernetes"
 )
+
+var ErrReferencedPipelineValidationFailed = errors.New("validation failed for referenced Pipeline")
 
 // GetPipelineFunc is a factory function that will use the given PipelineRef to return a valid GetPipeline function that
 // looks up the pipeline. It uses as context a k8s client, tekton client, namespace, and service account name to return
@@ -70,7 +73,7 @@ func GetPipelineFunc(ctx context.Context, k8s kubernetes.Interface, tekton clien
 			replacedParams := pr.Params.ReplaceVariables(stringReplacements, arrayReplacements, objectReplacements)
 
 			resolver := resolution.NewResolver(requester, pipelineRun, string(pr.Resolver), "", "", replacedParams)
-			return resolvePipeline(ctx, resolver, name, k8s, verificationPolicies)
+			return resolvePipeline(ctx, resolver, name, namespace, k8s, tekton, verificationPolicies)
 		}
 	default:
 		// Even if there is no pipeline ref, we should try to return a local resolver.
@@ -111,12 +114,12 @@ func (l *LocalPipelineRefResolver) GetPipeline(ctx context.Context, name string)
 // An error is returned if the remoteresource doesn't work
 // A VerificationResult is returned if trusted resources is enabled, VerificationResult contains the result type and err.
 // or the returned data isn't a valid *v1.Pipeline.
-func resolvePipeline(ctx context.Context, resolver remote.Resolver, name string, k8s kubernetes.Interface, verificationPolicies []*v1alpha1.VerificationPolicy) (*v1.Pipeline, *v1.RefSource, *trustedresources.VerificationResult, error) {
+func resolvePipeline(ctx context.Context, resolver remote.Resolver, name string, namespace string, k8s kubernetes.Interface, tekton clientset.Interface, verificationPolicies []*v1alpha1.VerificationPolicy) (*v1.Pipeline, *v1.RefSource, *trustedresources.VerificationResult, error) {
 	obj, refSource, err := resolver.Get(ctx, "pipeline", name)
 	if err != nil {
 		return nil, nil, nil, err
 	}
-	pipelineObj, vr, err := readRuntimeObjectAsPipeline(ctx, obj, k8s, refSource, verificationPolicies)
+	pipelineObj, vr, err := readRuntimeObjectAsPipeline(ctx, namespace, obj, k8s, tekton, refSource, verificationPolicies)
 	if err != nil {
 		return nil, nil, nil, err
 	}
@@ -132,11 +135,21 @@ func resolvePipeline(ctx context.Context, resolver remote.Resolver, name string,
 // PipelineObject or if there is an error validating or upgrading an
 // older PipelineObject into its v1beta1 equivalent.
 // TODO(#5541): convert v1beta1 obj to v1 once we use v1 as the stored version
-func readRuntimeObjectAsPipeline(ctx context.Context, obj runtime.Object, k8s kubernetes.Interface, refSource *v1.RefSource, verificationPolicies []*v1alpha1.VerificationPolicy) (*v1.Pipeline, *trustedresources.VerificationResult, error) {
+func readRuntimeObjectAsPipeline(ctx context.Context, namespace string, obj runtime.Object, k8s kubernetes.Interface, tekton clientset.Interface, refSource *v1.RefSource, verificationPolicies []*v1alpha1.VerificationPolicy) (*v1.Pipeline, *trustedresources.VerificationResult, error) {
 	switch obj := obj.(type) {
 	case *v1beta1.Pipeline:
 		// Verify the Pipeline once we fetch from the remote resolution, mutating, validation and conversion of the pipeline should happen after the verification, since signatures are based on the remote pipeline contents
 		vr := trustedresources.VerifyResource(ctx, obj, k8s, refSource, verificationPolicies)
+		// Issue a dry-run request to create the remote Pipeline, so that it can undergo validation from validating admission webhooks
+		// without actually creating the Pipeline on the cluster.
+		// Validation must happen before the v1beta1 Pipeline is converted into the storage version of the API,
+		// since validation of beta features differs between v1 and v1beta1
+		// TODO(#6592): Decouple API versioning from feature versioning
+		if _, err := tekton.TektonV1beta1().Pipelines(namespace).Create(ctx, obj, metav1.CreateOptions{DryRun: []string{metav1.DryRunAll}}); err != nil {
+			if apierrors.IsBadRequest(err) { // Pipeline rejected by validating webhook
+				return nil, nil, fmt.Errorf("%w %s: %s", ErrReferencedPipelineValidationFailed, obj.Name, err.Error())
+			}
+		}
 		p := &v1.Pipeline{
 			TypeMeta: metav1.TypeMeta{
 				Kind:       "Pipeline",
@@ -149,13 +162,14 @@ func readRuntimeObjectAsPipeline(ctx context.Context, obj runtime.Object, k8s ku
 		return p, &vr, nil
 	case *v1.Pipeline:
 		vr := trustedresources.VerifyResource(ctx, obj, k8s, refSource, verificationPolicies)
-		// Validation of beta fields must happen before the V1 Pipeline is converted into the storage version of the API.
-		// TODO(#6592): Decouple API versioning from feature versioning
-		if err := obj.Spec.ValidateBetaFields(ctx); err != nil {
-			return nil, nil, fmt.Errorf("invalid Pipeline %s: %w", obj.GetName(), err)
+		// Issue a dry-run request to create the remote Pipeline, so that it can undergo validation from validating admission webhooks
+		// without actually creating the Pipeline on the cluster
+		if _, err := tekton.TektonV1().Pipelines(namespace).Create(ctx, obj, metav1.CreateOptions{DryRun: []string{metav1.DryRunAll}}); err != nil {
+			if apierrors.IsBadRequest(err) { // Pipeline rejected by validating webhook
+				return nil, nil, fmt.Errorf("%w %s: %s", ErrReferencedPipelineValidationFailed, obj.Name, err.Error())
+			}
 		}
 		return obj, &vr, nil
 	}
-
 	return nil, nil, errors.New("resource is not a pipeline")
 }

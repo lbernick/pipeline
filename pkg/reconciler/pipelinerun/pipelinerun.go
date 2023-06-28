@@ -408,6 +408,9 @@ func (c *Reconciler) reconcile(ctx context.Context, pr *v1.PipelineRun, getPipel
 		message := fmt.Sprintf("PipelineRun %s/%s awaiting remote resource", pr.Namespace, pr.Name)
 		pr.Status.MarkRunning(ReasonResolvingPipelineRef, message)
 		return nil
+	case errors.Is(err, resources.ErrReferencedPipelineValidationFailed):
+		pr.Status.MarkFailed(ReasonFailedValidation, err.Error())
+		return controller.NewPermanentError(err)
 	case err != nil:
 		logger.Errorf("Failed to determine Pipeline spec to use for pipelinerun %s: %v", pr.Name, err)
 		pr.Status.MarkFailed(ReasonCouldntGetPipeline,
