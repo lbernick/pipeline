@@ -25,15 +25,16 @@ import (
 	remoteresource "github.com/tektoncd/pipeline/pkg/resolution/resource"
 	"github.com/tektoncd/pipeline/test"
 	"github.com/tektoncd/pipeline/test/diff"
+	"github.com/tektoncd/pipeline/test/parse"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"knative.dev/pkg/kmeta"
 )
 
-var pipelineBytes = []byte(`
+var pipelineYaml = `
 kind: Pipeline
 apiVersion: tekton.dev/v1beta1
 metadata:
-  name: foo
+  name: abcd
 spec:
   tasks:
   - name: task1
@@ -43,7 +44,8 @@ spec:
         image: ubuntu
         script: |
           echo "hello world!"
-`)
+`
+var pipelineBytes = []byte(pipelineYaml)
 
 func TestGet_Successful(t *testing.T) {
 	for _, tc := range []struct {
@@ -69,8 +71,14 @@ func TestGet_Successful(t *testing.T) {
 			ResolvedResource: resolved,
 		}
 		resolver := NewResolver(requester, owner, "git", "", "", nil)
-		if _, _, err := resolver.Get(ctx, "foo", "bar"); err != nil {
+		obj, _, err := resolver.Get(ctx, "foo", "bar")
+		if err != nil {
 			t.Fatalf("unexpected error: %v", err)
+		}
+		got := obj.(*v1beta1.Pipeline)
+		want := parse.MustParseV1beta1Pipeline(t, pipelineYaml)
+		if d := cmp.Diff(want, got); d != "" {
+			t.Errorf("unexpected diff %s", d)
 		}
 	}
 }

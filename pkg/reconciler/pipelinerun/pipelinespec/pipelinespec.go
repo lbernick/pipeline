@@ -22,23 +22,28 @@ import (
 	"fmt"
 
 	v1 "github.com/tektoncd/pipeline/pkg/apis/pipeline/v1"
+	clientset "github.com/tektoncd/pipeline/pkg/client/clientset/versioned"
 	resolutionutil "github.com/tektoncd/pipeline/pkg/internal/resolution"
 	"github.com/tektoncd/pipeline/pkg/trustedresources"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
+	"knative.dev/pkg/logging"
 )
 
 // GetPipeline is a function used to retrieve Pipelines.
 // VerificationResult is the result from trusted resources if the feature is enabled.
 type GetPipeline func(context.Context, string) (*v1.Pipeline, *v1.RefSource, *trustedresources.VerificationResult, error)
 
+var ErrRemotePipelineValidationFailed = errors.New("validation failed for remote Pipeline")
+
 // GetPipelineData will retrieve the Pipeline metadata and Spec associated with the
 // provided PipelineRun. This can come from a reference Pipeline or from the PipelineRun's
 // metadata and embedded PipelineSpec.
-func GetPipelineData(ctx context.Context, pipelineRun *v1.PipelineRun, getPipeline GetPipeline) (*resolutionutil.ResolvedObjectMeta, *v1.PipelineSpec, error) {
+func GetPipelineData(ctx context.Context, c clientset.Interface, pipelineRun *v1.PipelineRun, getPipeline GetPipeline) (*resolutionutil.ResolvedObjectMeta, *v1.PipelineSpec, error) {
 	pipelineMeta := metav1.ObjectMeta{}
 	var refSource *v1.RefSource
 	var verificationResult *trustedresources.VerificationResult
 	pipelineSpec := v1.PipelineSpec{}
+	logger := logging.FromContext(ctx)
 	switch {
 	case pipelineRun.Spec.PipelineRef != nil && pipelineRun.Spec.PipelineRef.Name != "":
 		// Get related pipeline for pipelinerun
@@ -57,6 +62,9 @@ func GetPipelineData(ctx context.Context, pipelineRun *v1.PipelineRun, getPipeli
 		// https://github.com/tektoncd/pipeline/issues/5522
 	case pipelineRun.Spec.PipelineRef != nil && pipelineRun.Spec.PipelineRef.Resolver != "":
 		pipeline, source, vr, err := getPipeline(ctx, "")
+		if pipeline != nil {
+			logger.Errorf("output of getPipeline: %s", pipeline.Name)
+		}
 		switch {
 		case err != nil:
 			return nil, nil, err
@@ -68,6 +76,15 @@ func GetPipelineData(ctx context.Context, pipelineRun *v1.PipelineRun, getPipeli
 		}
 		refSource = source
 		verificationResult = vr
+
+		// // Issue a dry-run request to create the remote Pipeline, so that it can undergo validation from validating admission webhooks
+		// // without actually creating the Pipeline on the cluster
+		// if _, err := c.TektonV1().Pipelines(pipelineRun.Namespace).Create(ctx, pipeline, metav1.CreateOptions{DryRun: []string{"All"}}); err != nil {
+		// 	switch {
+		// 	case apierrors.IsInvalid(err):
+		// 		return nil, nil, fmt.Errorf("%w %s: %v", ErrRemotePipelineValidationFailed, pipeline.Name, err)
+		// 	}
+		// }
 	default:
 		return nil, nil, fmt.Errorf("pipelineRun %s not providing PipelineRef or PipelineSpec", pipelineRun.Name)
 	}

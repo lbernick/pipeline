@@ -31,6 +31,7 @@ import (
 	"k8s.io/apimachinery/pkg/util/sets"
 	"k8s.io/apimachinery/pkg/util/validation"
 	"knative.dev/pkg/apis"
+	"knative.dev/pkg/logging"
 	"knative.dev/pkg/webhook/resourcesemantics"
 )
 
@@ -45,6 +46,14 @@ func (p *Pipeline) SupportedVerbs() []admissionregistrationv1.OperationType {
 // Validate checks that the Pipeline structure is valid but does not validate
 // that any references resources exist, that is done at run time.
 func (p *Pipeline) Validate(ctx context.Context) *apis.FieldError {
+
+	// Remove me!
+	logger := logging.FromContext(ctx)
+	if p.Name == "invalid" {
+		logger.Errorf("found test pipeline")
+		return apis.ErrGeneric("bad pipeline")
+	}
+
 	errs := validate.ObjectMetadata(p.GetObjectMeta()).ViaField("metadata")
 	errs = errs.Also(p.Spec.Validate(apis.WithinSpec(ctx)).ViaField("spec"))
 	// When a Pipeline is created directly, instead of declared inline in a PipelineRun,

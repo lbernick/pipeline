@@ -33,6 +33,7 @@ import (
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/runtime"
 	"k8s.io/client-go/kubernetes"
+	"knative.dev/pkg/logging"
 )
 
 // GetPipelineFunc is a factory function that will use the given PipelineRef to return a valid GetPipeline function that
@@ -42,6 +43,7 @@ import (
 func GetPipelineFunc(ctx context.Context, k8s kubernetes.Interface, tekton clientset.Interface, requester remoteresource.Requester, pipelineRun *v1.PipelineRun, verificationPolicies []*v1alpha1.VerificationPolicy) rprp.GetPipeline {
 	pr := pipelineRun.Spec.PipelineRef
 	namespace := pipelineRun.Namespace
+	logger := logging.FromContext(ctx)
 	// if the spec is already in the status, do not try to fetch it again, just use it as source of truth.
 	// Same for the RefSource field in the Status.Provenance.
 	if pipelineRun.Status.PipelineSpec != nil {
@@ -70,7 +72,9 @@ func GetPipelineFunc(ctx context.Context, k8s kubernetes.Interface, tekton clien
 			replacedParams := pr.Params.ReplaceVariables(stringReplacements, arrayReplacements, objectReplacements)
 
 			resolver := resolution.NewResolver(requester, pipelineRun, string(pr.Resolver), "", "", replacedParams)
-			return resolvePipeline(ctx, resolver, name, k8s, verificationPolicies)
+			p, rs, vr, err := resolvePipeline(ctx, resolver, name, k8s, verificationPolicies)
+			logger.Errorf("output of resolvePipeline: %s", p)
+			return p, rs, vr, err
 		}
 	default:
 		// Even if there is no pipeline ref, we should try to return a local resolver.
@@ -112,11 +116,13 @@ func (l *LocalPipelineRefResolver) GetPipeline(ctx context.Context, name string)
 // A VerificationResult is returned if trusted resources is enabled, VerificationResult contains the result type and err.
 // or the returned data isn't a valid *v1.Pipeline.
 func resolvePipeline(ctx context.Context, resolver remote.Resolver, name string, k8s kubernetes.Interface, verificationPolicies []*v1alpha1.VerificationPolicy) (*v1.Pipeline, *v1.RefSource, *trustedresources.VerificationResult, error) {
+	logger := logging.FromContext(ctx)
 	obj, refSource, err := resolver.Get(ctx, "pipeline", name)
 	if err != nil {
 		return nil, nil, nil, err
 	}
 	pipelineObj, vr, err := readRuntimeObjectAsPipeline(ctx, obj, k8s, refSource, verificationPolicies)
+	logger.Errorf("output of readRuntimeObjectAsPipeline: %s, %s", pipelineObj.Name, err)
 	if err != nil {
 		return nil, nil, nil, err
 	}
@@ -133,6 +139,7 @@ func resolvePipeline(ctx context.Context, resolver remote.Resolver, name string,
 // older PipelineObject into its v1beta1 equivalent.
 // TODO(#5541): convert v1beta1 obj to v1 once we use v1 as the stored version
 func readRuntimeObjectAsPipeline(ctx context.Context, obj runtime.Object, k8s kubernetes.Interface, refSource *v1.RefSource, verificationPolicies []*v1alpha1.VerificationPolicy) (*v1.Pipeline, *trustedresources.VerificationResult, error) {
+	logger := logging.FromContext(ctx)
 	switch obj := obj.(type) {
 	case *v1beta1.Pipeline:
 		// Verify the Pipeline once we fetch from the remote resolution, mutating, validation and conversion of the pipeline should happen after the verification, since signatures are based on the remote pipeline contents
@@ -143,9 +150,11 @@ func readRuntimeObjectAsPipeline(ctx context.Context, obj runtime.Object, k8s ku
 				APIVersion: "tekton.dev/v1",
 			},
 		}
+		logger.Errorf("v1beta1 name: %s", obj.Name)
 		if err := obj.ConvertTo(ctx, p); err != nil {
 			return nil, nil, fmt.Errorf("failed to convert obj %s into Pipeline", obj.GetObjectKind().GroupVersionKind().String())
 		}
+		logger.Errorf("v1 name: %s", p.Name)
 		return p, &vr, nil
 	case *v1.Pipeline:
 		vr := trustedresources.VerifyResource(ctx, obj, k8s, refSource, verificationPolicies)
