@@ -48,21 +48,11 @@ import (
 	"sigs.k8s.io/yaml"
 )
 
-var bundleFeatureFlags = requireAnyGate(map[string]string{
-	"enable-tekton-oci-bundles": "true",
-	"enable-api-fields":         "alpha",
-})
-
-var resolverFeatureFlags = requireAllGates(map[string]string{
-	"enable-bundles-resolver": "true",
-	"enable-api-fields":       "beta",
-})
-
 // TestTektonBundlesSimpleWorkingExample is an integration test which tests a simple, working Tekton bundle using OCI
 // images.
 func TestTektonBundlesSimpleWorkingExample(t *testing.T) {
 	ctx := context.Background()
-	c, namespace := setup(ctx, t, withRegistry, bundleFeatureFlags)
+	c, namespace := setup(ctx, t, withRegistry)
 
 	t.Parallel()
 
@@ -155,7 +145,7 @@ spec:
 // images using the remote resolution bundles resolver.
 func TestTektonBundlesResolver(t *testing.T) {
 	ctx := context.Background()
-	c, namespace := setup(ctx, t, withRegistry, resolverFeatureFlags)
+	c, namespace := setup(ctx, t, withRegistry, requireBetaFeatureFlags)
 
 	t.Parallel()
 
@@ -258,7 +248,7 @@ spec:
 // TestTektonBundlesUsingRegularImage is an integration test which passes a non-Tekton bundle as a task reference.
 func TestTektonBundlesUsingRegularImage(t *testing.T) {
 	ctx := context.Background()
-	c, namespace := setup(ctx, t, withRegistry, bundleFeatureFlags)
+	c, namespace := setup(ctx, t, withRegistry)
 
 	t.Parallel()
 
@@ -311,7 +301,7 @@ spec:
 // task reference.
 func TestTektonBundlesUsingImproperFormat(t *testing.T) {
 	ctx := context.Background()
-	c, namespace := setup(ctx, t, withRegistry, bundleFeatureFlags)
+	c, namespace := setup(ctx, t, withRegistry)
 
 	t.Parallel()
 

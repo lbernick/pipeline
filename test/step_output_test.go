@@ -38,7 +38,7 @@ func TestStepOutput(t *testing.T) {
 	t.Parallel()
 	ctx, cancel := context.WithTimeout(context.Background(), 2*time.Minute)
 	defer cancel()
-	clients, namespace := setup(ctx, t, requireAnyGate(map[string]string{"enable-api-fields": "alpha"}))
+	clients, namespace := setup(ctx, t, requireBetaFeatureFlags)
 
 	knativetest.CleanupOnInterrupt(func() { tearDown(context.Background(), t, clients, namespace) }, t.Logf)
 	defer tearDown(context.Background(), t, clients, namespace)
@@ -116,7 +116,7 @@ func TestStepOutputWithWorkspace(t *testing.T) {
 	t.Parallel()
 	ctx, cancel := context.WithTimeout(context.Background(), 2*time.Minute)
 	defer cancel()
-	clients, namespace := setup(ctx, t, requireAnyGate(map[string]string{"enable-api-fields": "alpha"}))
+	clients, namespace := setup(ctx, t, requireAlphaFeatureFlags)
 
 	knativetest.CleanupOnInterrupt(func() { tearDown(context.Background(), t, clients, namespace) }, t.Logf)
 	defer tearDown(context.Background(), t, clients, namespace)

@@ -77,7 +77,7 @@ func initImageNames() map[int]string {
 	}
 }
 
-// initExcludedTests provides list of excluded tests for e2e and exanples tests
+// initExcludedTests provides list of excluded tests for e2e and examples tests
 func initExcludedTests() sets.String {
 	switch getTestArch() {
 	case "s390x":
@@ -85,17 +85,12 @@ func initExcludedTests() sets.String {
 			// Git resolver test using local Gitea instance
 			"TestGitResolver_API",
 			// examples
-			"TestExamples/v1alpha1/taskruns/gcs-resource",
-			"TestExamples/v1beta1/taskruns/gcs-resource",
 			"TestExamples/v1beta1/taskruns/creds-init-only-mounts-provided-credentials",
 		)
 	case "ppc64le":
 		return sets.NewString(
 			// Git resolver test using local Gitea instance
 			"TestGitResolver_API",
-			// examples
-			"TestExamples/v1alpha1/taskruns/gcs-resource",
-			"TestExamples/v1beta1/taskruns/gcs-resource",
 		)
 	}
 
@@ -107,8 +102,8 @@ func getTestImage(image int) string {
 	return imageNames[image]
 }
 
-// skipIfExcluded checks if test name is in the excluded list and skip it
-func skipIfExcluded(t *testing.T) {
+// skipIfExcludedOnTestArch checks if test name is in the excluded list and skip it
+func skipIfExcludedOnTestArch(t *testing.T) {
 	t.Helper()
 	if excludedTests.Has(t.Name()) {
 		t.Skipf("skip for %s architecture", getTestArch())

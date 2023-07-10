@@ -39,10 +39,6 @@ import (
 	"knative.dev/pkg/test/helpers"
 )
 
-var requireAlphaFeatureFlags = requireAnyGate(map[string]string{
-	"enable-api-fields": "alpha",
-})
-
 func TestPipelineLevelFinally_OneDAGTaskFailed_InvalidTaskResult_Failure(t *testing.T) {
 	ctx := context.Background()
 	ctx, cancel := context.WithCancel(ctx)

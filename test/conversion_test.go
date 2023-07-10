@@ -1168,7 +1168,7 @@ func TestBundleConversion(t *testing.T) {
 
 	t.Parallel()
 
-	c, namespace := setup(ctx, t, withRegistry, bundleFeatureFlags)
+	c, namespace := setup(ctx, t, withRegistry)
 	knativetest.CleanupOnInterrupt(func() { tearDown(ctx, t, c, namespace) }, t.Logf)
 	defer tearDown(ctx, t, c, namespace)
 

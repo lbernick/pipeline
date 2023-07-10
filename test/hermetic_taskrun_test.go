@@ -37,7 +37,7 @@ func TestHermeticTaskRun(t *testing.T) {
 	ctx, cancel := context.WithCancel(ctx)
 	defer cancel()
 
-	c, namespace := setup(ctx, t, requireAnyGate(map[string]string{"enable-api-fields": "alpha"}))
+	c, namespace := setup(ctx, t, requireAlphaFeatureFlags)
 	t.Parallel()
 	defer tearDown(ctx, t, c, namespace)
 

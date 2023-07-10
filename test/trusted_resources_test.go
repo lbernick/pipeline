@@ -41,10 +41,6 @@ import (
 )
 
 var (
-	neededFeatureFlags = map[string]string{
-		// Make sure this is running under alpha integration tests
-		"enable-api-fields": "alpha",
-	}
 	privKey  = "trustedresources-keys/cosign.key"
 	pubKey   = "trustedresources-keys/cosign.pub"
 	password = "1234"
@@ -60,7 +56,7 @@ func TestTrustedResourcesVerify_VerificationPolicy_Success(t *testing.T) {
 	ctx, cancel := context.WithCancel(ctx)
 	defer cancel()
 
-	c, namespace, secretName, signer := setupResourceVerificationConfig(ctx, t, requireAnyGate(neededFeatureFlags))
+	c, namespace, secretName, signer := setupResourceVerificationConfig(ctx, t, requireAlphaFeatureFlags)
 	knativetest.CleanupOnInterrupt(func() { removeResourceVerificationConfig(ctx, t, c, namespace, secretName) }, t.Logf)
 	defer removeResourceVerificationConfig(ctx, t, c, namespace, secretName)
 
@@ -174,7 +170,7 @@ func TestTrustedResourcesVerify_VerificationPolicy_Error(t *testing.T) {
 	ctx, cancel := context.WithCancel(ctx)
 	defer cancel()
 
-	c, namespace, secretName, signer := setupResourceVerificationConfig(ctx, t, requireAnyGate(neededFeatureFlags))
+	c, namespace, secretName, signer := setupResourceVerificationConfig(ctx, t, requireAlphaFeatureFlags)
 	knativetest.CleanupOnInterrupt(func() { removeResourceVerificationConfig(ctx, t, c, namespace, secretName) }, t.Logf)
 	defer removeResourceVerificationConfig(ctx, t, c, namespace, secretName)
 
@@ -290,7 +286,7 @@ spec:
 
 func setupResourceVerificationConfig(ctx context.Context, t *testing.T, fn ...func(context.Context, *testing.T, *clients, string)) (*clients, string, string, signature.Signer) {
 	t.Helper()
-	c, ns := setup(ctx, t, requireAnyGate(neededFeatureFlags))
+	c, ns := setup(ctx, t, requireAlphaFeatureFlags)
 	secretName, signer := setSecretAndConfig(ctx, t, c.KubeClient, ns)
 	return c, ns, secretName, signer
 }

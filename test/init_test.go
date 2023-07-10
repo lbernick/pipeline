@@ -55,7 +55,7 @@ func init() {
 
 func setup(ctx context.Context, t *testing.T, fn ...func(context.Context, *testing.T, *clients, string)) (*clients, string) {
 	t.Helper()
-	skipIfExcluded(t)
+	skipIfExcludedOnTestArch(t)
 
 	t.Helper()
 	namespace := names.SimpleNameGenerator.RestrictLengthWithRandomSuffix("arendelle")
