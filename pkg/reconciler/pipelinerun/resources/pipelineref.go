@@ -34,6 +34,7 @@ import (
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/runtime"
 	"k8s.io/client-go/kubernetes"
+	"knative.dev/pkg/logging"
 )
 
 var ErrReferencedPipelineValidationFailed = errors.New("validation failed for referenced Pipeline")
@@ -136,6 +137,7 @@ func resolvePipeline(ctx context.Context, resolver remote.Resolver, name string,
 // older PipelineObject into its v1beta1 equivalent.
 // TODO(#5541): convert v1beta1 obj to v1 once we use v1 as the stored version
 func readRuntimeObjectAsPipeline(ctx context.Context, namespace string, obj runtime.Object, k8s kubernetes.Interface, tekton clientset.Interface, refSource *v1.RefSource, verificationPolicies []*v1alpha1.VerificationPolicy) (*v1.Pipeline, *trustedresources.VerificationResult, error) {
+	logger := logging.FromContext(ctx)
 	switch obj := obj.(type) {
 	case *v1beta1.Pipeline:
 		// Verify the Pipeline once we fetch from the remote resolution, mutating, validation and conversion of the pipeline should happen after the verification, since signatures are based on the remote pipeline contents
@@ -146,8 +148,14 @@ func readRuntimeObjectAsPipeline(ctx context.Context, namespace string, obj runt
 		// since validation of beta features differs between v1 and v1beta1
 		// TODO(#6592): Decouple API versioning from feature versioning
 		if _, err := tekton.TektonV1beta1().Pipelines(namespace).Create(ctx, obj, metav1.CreateOptions{DryRun: []string{metav1.DryRunAll}}); err != nil {
+			if status, ok := err.(apierrors.APIStatus); ok || errors.As(err, &status) {
+				logger.Errorf("reason: %s, code: %s", status.Status().Reason, status.Status().Code)
+			}
 			if apierrors.IsBadRequest(err) { // Pipeline rejected by validating webhook
 				return nil, nil, fmt.Errorf("%w %s: %s", ErrReferencedPipelineValidationFailed, obj.Name, err.Error())
+			}
+			if apierrors.IsInternalError(err) || apierrors.IsServiceUnavailable(err) { // validating webhook is down
+				return nil, nil, fmt.Errorf("error validating remote Pipeline %s: %w", obj.Name, err)
 			}
 		}
 		p := &v1.Pipeline{
