@@ -24,6 +24,7 @@ import (
 	"strings"
 
 	corev1 "k8s.io/api/core/v1"
+	"k8s.io/apimachinery/pkg/util/sets"
 )
 
 const (
@@ -94,20 +95,17 @@ const (
 	runningInEnvWithInjectedSidecarsKey = "running-in-environment-with-injected-sidecars"
 	awaitSidecarReadinessKey            = "await-sidecar-readiness"
 	requireGitSSHSecretKnownHostsKey    = "require-git-ssh-secret-known-hosts" //nolint:gosec
-	enableTektonOCIBundles              = "enable-tekton-oci-bundles"
-	enableAPIFields                     = "enable-api-fields"
-	sendCloudEventsForRuns              = "send-cloudevents-for-runs"
-	enforceNonfalsifiability            = "enforce-nonfalsifiability"
-	verificationNoMatchPolicy           = "trusted-resources-verification-no-match-policy"
-	enableProvenanceInStatus            = "enable-provenance-in-status"
-	resultExtractionMethod              = "results-from"
-	maxResultSize                       = "max-result-size"
+	enableTektonOCIBundlesKey           = "enable-tekton-oci-bundles"
+	enableAPIFieldsKey                  = "enable-api-fields"
+	sendCloudEventsForRunsKey           = "send-cloudevents-for-runs"
+	enforceNonfalsifiabilityKey         = "enforce-nonfalsifiability"
+	verificationNoMatchPolicyKey        = "trusted-resources-verification-no-match-policy"
+	enableProvenanceInStatusKey         = "enable-provenance-in-status"
+	resultExtractionMethodKey           = "results-from"
+	maxResultSizeKey                    = "max-result-size"
 	setSecurityContextKey               = "set-security-context"
 	coscheduleKey                       = "coschedule"
 )
-
-// DefaultFeatureFlags holds all the default configurations for the feature flags configmap.
-var DefaultFeatureFlags, _ = NewFeatureFlagsFromMap(map[string]string{})
 
 // FeatureFlags holds the features configurations
 // +k8s:deepcopy-gen=true
@@ -137,6 +135,25 @@ type FeatureFlags struct {
 	Coschedule                string
 }
 
+// DefaultFeatureFlags holds all the default configurations for the feature flags configmap.
+var DefaultFeatureFlags = FeatureFlags{
+	AwaitSidecarReadiness:            DefaultAwaitSidecarReadiness,
+	Coschedule:                       DefaultCoschedule,
+	DisableAffinityAssistant:         DefaultDisableAffinityAssistant,
+	DisableCredsInit:                 DefaultDisableCredsInit,
+	EnableAPIFields:                  DefaultEnableAPIFields,
+	EnableProvenanceInStatus:         DefaultEnableProvenanceInStatus,
+	EnableTektonOCIBundles:           DefaultEnableTektonOciBundles,
+	EnforceNonfalsifiability:         DefaultEnforceNonfalsifiability,
+	MaxResultSize:                    DefaultMaxResultSize,
+	RequireGitSSHSecretKnownHosts:    DefaultRequireGitSSHSecretKnownHosts,
+	ResultExtractionMethod:           DefaultResultExtractionMethod,
+	RunningInEnvWithInjectedSidecars: DefaultRunningInEnvWithInjectedSidecars,
+	SendCloudEventsForRuns:           DefaultSendCloudEventsForRuns,
+	SetSecurityContext:               DefaultSetSecurityContext,
+	VerificationNoMatchPolicy:        DefaultNoMatchPolicyConfig,
+}
+
 // GetFeatureFlagsConfigName returns the name of the configmap containing all
 // feature flags.
 func GetFeatureFlagsConfigName() string {
@@ -148,7 +165,7 @@ func GetFeatureFlagsConfigName() string {
 
 // NewFeatureFlagsFromMap returns a Config given a map corresponding to a ConfigMap
 func NewFeatureFlagsFromMap(cfgMap map[string]string) (*FeatureFlags, error) {
-	setFeature := func(key string, defaultValue bool, feature *bool) error {
+	setBooleanFeature := func(key string, feature *bool) error {
 		if cfg, ok := cfgMap[key]; ok {
 			value, err := strconv.ParseBool(cfg)
 			if err != nil {
@@ -157,39 +174,49 @@ func NewFeatureFlagsFromMap(cfgMap map[string]string) (*FeatureFlags, error) {
 			*feature = value
 			return nil
 		}
-		*feature = defaultValue
+		return nil
+	}
+	setStringFeature := func(key string, feature *string, validValues sets.String) error {
+		if cfg, ok := cfgMap[key]; ok {
+			value := strings.ToLower(cfg)
+			if !validValues.Has(value) {
+				return fmt.Errorf("invalid value for feature %s; valid values are %s", key, validValues.List())
+			}
+			*feature = value
+			return nil
+		}
 		return nil
 	}
 
-	tc := FeatureFlags{}
-	if err := setFeature(disableAffinityAssistantKey, DefaultDisableAffinityAssistant, &tc.DisableAffinityAssistant); err != nil {
+	tc := DefaultFeatureFlags.DeepCopy()
+	if err := setBooleanFeature(disableAffinityAssistantKey, &tc.DisableAffinityAssistant); err != nil {
 		return nil, err
 	}
-	if err := setFeature(disableCredsInitKey, DefaultDisableCredsInit, &tc.DisableCredsInit); err != nil {
+	if err := setBooleanFeature(disableCredsInitKey, &tc.DisableCredsInit); err != nil {
 		return nil, err
 	}
-	if err := setFeature(runningInEnvWithInjectedSidecarsKey, DefaultRunningInEnvWithInjectedSidecars, &tc.RunningInEnvWithInjectedSidecars); err != nil {
+	if err := setBooleanFeature(runningInEnvWithInjectedSidecarsKey, &tc.RunningInEnvWithInjectedSidecars); err != nil {
 		return nil, err
 	}
-	if err := setFeature(awaitSidecarReadinessKey, DefaultAwaitSidecarReadiness, &tc.AwaitSidecarReadiness); err != nil {
+	if err := setBooleanFeature(awaitSidecarReadinessKey, &tc.AwaitSidecarReadiness); err != nil {
 		return nil, err
 	}
-	if err := setFeature(requireGitSSHSecretKnownHostsKey, DefaultRequireGitSSHSecretKnownHosts, &tc.RequireGitSSHSecretKnownHosts); err != nil {
+	if err := setBooleanFeature(requireGitSSHSecretKnownHostsKey, &tc.RequireGitSSHSecretKnownHosts); err != nil {
 		return nil, err
 	}
-	if err := setEnabledAPIFields(cfgMap, DefaultEnableAPIFields, &tc.EnableAPIFields); err != nil {
+	if err := setStringFeature(enableAPIFieldsKey, &tc.EnableAPIFields, sets.NewString(AlphaAPIFields, BetaAPIFields, StableAPIFields)); err != nil {
 		return nil, err
 	}
-	if err := setFeature(sendCloudEventsForRuns, DefaultSendCloudEventsForRuns, &tc.SendCloudEventsForRuns); err != nil {
+	if err := setBooleanFeature(sendCloudEventsForRunsKey, &tc.SendCloudEventsForRuns); err != nil {
 		return nil, err
 	}
-	if err := setVerificationNoMatchPolicy(cfgMap, DefaultNoMatchPolicyConfig, &tc.VerificationNoMatchPolicy); err != nil {
+	if err := setStringFeature(verificationNoMatchPolicyKey, &tc.VerificationNoMatchPolicy); err != nil {
 		return nil, err
 	}
-	if err := setFeature(enableProvenanceInStatus, DefaultEnableProvenanceInStatus, &tc.EnableProvenanceInStatus); err != nil {
+	if err := setBooleanFeature(enableProvenanceInStatusKey, &tc.EnableProvenanceInStatus); err != nil {
 		return nil, err
 	}
-	if err := setResultExtractionMethod(cfgMap, DefaultResultExtractionMethod, &tc.ResultExtractionMethod); err != nil {
+	if err := setStringFeature(resultExtractionMethodKey, &tc.ResultExtractionMethod); err != nil {
 		return nil, err
 	}
 	if err := setMaxResultSize(cfgMap, DefaultMaxResultSize, &tc.MaxResultSize); err != nil {
@@ -198,7 +225,7 @@ func NewFeatureFlagsFromMap(cfgMap map[string]string) (*FeatureFlags, error) {
 	if err := setEnforceNonFalsifiability(cfgMap, tc.EnableAPIFields, &tc.EnforceNonfalsifiability); err != nil {
 		return nil, err
 	}
-	if err := setFeature(setSecurityContextKey, DefaultSetSecurityContext, &tc.SetSecurityContext); err != nil {
+	if err := setBooleanFeature(setSecurityContextKey, &tc.SetSecurityContext); err != nil {
 		return nil, err
 	}
 
@@ -214,27 +241,11 @@ func NewFeatureFlagsFromMap(cfgMap map[string]string) (*FeatureFlags, error) {
 	if tc.EnableAPIFields == AlphaAPIFields {
 		tc.EnableTektonOCIBundles = true
 	} else {
-		if err := setFeature(enableTektonOCIBundles, DefaultEnableTektonOciBundles, &tc.EnableTektonOCIBundles); err != nil {
+		if err := setBooleanFeature(enableTektonOCIBundlesKey, &tc.EnableTektonOCIBundles); err != nil {
 			return nil, err
 		}
 	}
-	return &tc, nil
-}
-
-// setEnabledAPIFields sets the "enable-api-fields" flag based on the content of a given map.
-// If the feature gate is invalid or missing then an error is returned.
-func setEnabledAPIFields(cfgMap map[string]string, defaultValue string, feature *string) error {
-	value := defaultValue
-	if cfg, ok := cfgMap[enableAPIFields]; ok {
-		value = strings.ToLower(cfg)
-	}
-	switch value {
-	case AlphaAPIFields, BetaAPIFields, StableAPIFields:
-		*feature = value
-	default:
-		return fmt.Errorf("invalid value for feature flag %q: %q", enableAPIFields, value)
-	}
-	return nil
+	return tc, nil
 }
 
 // setCoschedule sets the "coschedule" flag based on the content of a given map.
@@ -264,7 +275,7 @@ func setCoschedule(cfgMap map[string]string, defaultValue string, disabledAffini
 // If the feature gate is invalid, then an error is returned.
 func setEnforceNonFalsifiability(cfgMap map[string]string, enableAPIFields string, feature *string) error {
 	var value = DefaultEnforceNonfalsifiability
-	if cfg, ok := cfgMap[enforceNonfalsifiability]; ok {
+	if cfg, ok := cfgMap[enforceNonfalsifiabilityKey]; ok {
 		value = strings.ToLower(cfg)
 	}
 
@@ -273,7 +284,7 @@ func setEnforceNonFalsifiability(cfgMap map[string]string, enableAPIFields strin
 	case EnforceNonfalsifiabilityNone, EnforceNonfalsifiabilityWithSpire:
 		break
 	default:
-		return fmt.Errorf("invalid value for feature flag %q: %q", enforceNonfalsifiability, value)
+		return fmt.Errorf("invalid value for feature flag %q: %q", enforceNonfalsifiabilityKey, value)
 	}
 
 	// validate that "enforce-nonfalsifiability" is set to allowed values for stability level
@@ -283,7 +294,7 @@ func setEnforceNonFalsifiability(cfgMap map[string]string, enableAPIFields strin
 	default:
 		// Do not consider any form of non-falsifiability enforcement in non-alpha mode
 		if value != DefaultEnforceNonfalsifiability {
-			return fmt.Errorf("%q can be set to non-default values (%q) only in alpha", enforceNonfalsifiability, value)
+			return fmt.Errorf("%q can be set to non-default values (%q) only in alpha", enforceNonfalsifiabilityKey, value)
 		}
 	}
 	return nil
@@ -293,14 +304,14 @@ func setEnforceNonFalsifiability(cfgMap map[string]string, enableAPIFields strin
 // If the feature gate is invalid or missing then an error is returned.
 func setResultExtractionMethod(cfgMap map[string]string, defaultValue string, feature *string) error {
 	value := defaultValue
-	if cfg, ok := cfgMap[resultExtractionMethod]; ok {
+	if cfg, ok := cfgMap[resultExtractionMethodKey]; ok {
 		value = strings.ToLower(cfg)
 	}
 	switch value {
 	case ResultExtractionMethodTerminationMessage, ResultExtractionMethodSidecarLogs:
 		*feature = value
 	default:
-		return fmt.Errorf("invalid value for feature flag %q: %q", resultExtractionMethod, value)
+		return fmt.Errorf("invalid value for feature flag %q: %q", resultExtractionMethodKey, value)
 	}
 	return nil
 }
@@ -309,7 +320,7 @@ func setResultExtractionMethod(cfgMap map[string]string, defaultValue string, fe
 // If the feature gate is invalid or missing then an error is returned.
 func setMaxResultSize(cfgMap map[string]string, defaultValue int, feature *int) error {
 	value := defaultValue
-	if cfg, ok := cfgMap[maxResultSize]; ok {
+	if cfg, ok := cfgMap[maxResultSizeKey]; ok {
 		v, err := strconv.Atoi(cfg)
 		if err != nil {
 			return err
@@ -318,7 +329,7 @@ func setMaxResultSize(cfgMap map[string]string, defaultValue int, feature *int) 
 	}
 	// if max limit is > 1.5 MB (CRD limit).
 	if value >= 1572864 {
-		return fmt.Errorf("invalid value for feature flag %q: %q. This is exceeding the CRD limit", resultExtractionMethod, fmt.Sprint(value))
+		return fmt.Errorf("invalid value for feature flag %q: %q. This is exceeding the CRD limit", resultExtractionMethodKey, fmt.Sprint(value))
 	}
 	*feature = value
 	return nil
@@ -328,14 +339,14 @@ func setMaxResultSize(cfgMap map[string]string, defaultValue int, feature *int) 
 // If the value is invalid or missing then an error is returned.
 func setVerificationNoMatchPolicy(cfgMap map[string]string, defaultValue string, feature *string) error {
 	value := defaultValue
-	if cfg, ok := cfgMap[verificationNoMatchPolicy]; ok {
+	if cfg, ok := cfgMap[verificationNoMatchPolicyKey]; ok {
 		value = strings.ToLower(cfg)
 	}
 	switch value {
 	case FailNoMatchPolicy, WarnNoMatchPolicy, IgnoreNoMatchPolicy:
 		*feature = value
 	default:
-		return fmt.Errorf("invalid value for feature flag %q: %q", verificationNoMatchPolicy, value)
+		return fmt.Errorf("invalid value for feature flag %q: %q", verificationNoMatchPolicyKey, value)
 	}
 	return nil
 }
