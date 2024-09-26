@@ -1,0 +1,48 @@
+kind: Task
+metadata:
+  name: git-clone
+spec:
+  outputWorkspaces:
+  - name: repo
+    path: /app
+  params:
+  - name: reponame
+  steps:
+  - image: git-init
+    script: git clone $(params.reponame)
+    workingDir: /app # any way to make this the default output artifact path?
+---
+kind: Task
+metadata:
+  name: test
+spec:
+  inputWorkspaces:
+  - name: source
+    path: /my-favorite-path
+  outputWorkspaces:
+  - name: logs # This is probably a bad example now that we're doing results logs.
+
+
+
+kind: Pipeline
+spec:
+  
+# How is this different from replacing workspaces with inputWorkspaces and outputWorkspaces, and automatically storing their contents
+# if people don't provide a binding?
+# Can we automatically store workspace contents if people don't specify a binding?
+# Maybe: replace default workspace binding with a feature flag "workspace-binding-behavior", w/ options to:
+# - fail if there is no workspace bound (the default)
+# - supply an emptydir binding by default
+# - allow tekton to handle storage of workspace contents by default
+# and then eventually the last option is the default option.
+
+# In this model, user is responsible for writing to the file, and we compress and push to a registry.
+# But what if we expand "artifacts" to include images and software packages?
+# Who is responsible for pushing the image?
+# An image as an input artifact doesn't make much sense, since Tasks already have images.
+# Maybe an image should be its own type?
+
+# We definitely don't want to have types for each type of software package. Would it make sense to have one type for all software packages?
+
+# Image pipelineresource doesn't actually push the image for you; it just makes the digest available in subsequent steps. but you can do this with results.
+# it doesn't look like any ci/cd system pushes an image or uploads a package for you.
